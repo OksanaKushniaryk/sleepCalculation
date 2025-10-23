@@ -1,5 +1,17 @@
 // sleep_score.js
 
+import { TSD } from "./tsd.js";
+import { SE } from "./se.js";
+import { DSS } from "./dss.js";
+import { RSS } from "./rss.js";
+import { SSD } from "./ssd.js";
+import { SOL } from "./sol.js";
+import { WASO } from "./waso.js";
+import { HRD } from "./hrd.js";
+import { CAS } from "./cas.js";
+import { SCS } from "./scs.js";
+import { NSC } from "./nsc.js";
+
 function round2(n) { return Number(n.toFixed(2)); }
 
 function sleepScore({
@@ -13,9 +25,22 @@ function sleepScore({
 }
 
 // === Приклад із твоїми значеннями ===
-const result = sleepScore({
-  TSD:100, SE:100, DSS:25, RSS:98.67, SSD:57.04,
-  SOL:100, WASO:100, HRD:100, CAS:95, SCS:99.38, NSC:100
-});
+const subScores = {
+  TSD: 100, 
+  SE: 99.42, 
+  DSS: 65.13, 
+  RSS: 77.92, 
+  SSD: 71.53,
+  SOL: 100, 
+  WASO: 100, 
+  HRD: 100, 
+  CAS: 51, 
+  SCS: 89.68, 
+  NSC: 100
+};
 
+const result = sleepScore(subScores);
+
+console.log("---- Sub-scores ----");
+console.table(subScores);
 console.log('SleepS =', result);
