@@ -28,5 +28,5 @@ export function RSS({ deepH, deepM, coreH, coreM, remH, remM, mu = 22, sigma = 5
     mu: 22, sigma: 5
   });
   
-  console.log('REM Sleep Score (RSS) =', result);
+  console.info('REM Sleep Score (RSS) =', result);
   

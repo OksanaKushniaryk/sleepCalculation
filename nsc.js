@@ -25,5 +25,5 @@ export function NSC({ observedCycles }) {
   
   // === Приклад із твоїми даними ===
   const result = NSC({ observedCycles: 5 });
-  console.log('Number of Cycles Score (NSC) =', result);
+  console.info('Number of Cycles Score (NSC) =', result);
   

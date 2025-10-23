@@ -48,6 +48,6 @@ export function CAS({ xHours, mu = 4.0, k = 20 }) {
   
   const hh = String(mid.hh).padStart(2, "0");
   const mm = String(mid.mm).padStart(2, "0");
-  console.log(`Midpoint = ${hh}:${mm} (${mid.hoursDecimal.toFixed(2)} h)`);
-  console.log("Circadian Alignment Score (CAS) =", score2);
+  console.info(`Midpoint = ${hh}:${mm} (${mid.hoursDecimal.toFixed(2)} h)`);
+  console.info("Circadian Alignment Score (CAS) =", score2);
   

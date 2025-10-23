@@ -5,9 +5,9 @@
 
 // tsd.js (CommonJS, без export/import)
 
-function toHours(h, m = 0) {
-    return Number(h) + Number(m) / 60;
-  }
+function toHours(hours, minutes = 0) {
+  return Number(hours) + Number(minutes) / 60;
+}
   
 export function TSD({ deepH, deepM, coreH, coreM, remH, remM, awakeH = 0, awakeM = 0, mu = 8, sigma = 1.5 }) {
   const deep = toHours(deepH, deepM);
@@ -31,5 +31,5 @@ export function TSD({ deepH, deepM, coreH, coreM, remH, remM, awakeH = 0, awakeM
     mu: 8, sigma: 1.5
   });
   
-  console.log('TSD =', result);
+  console.info('TSD =', result);
   

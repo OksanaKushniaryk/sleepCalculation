@@ -18,4 +18,4 @@ const result = sleepScore({
   SOL:100, WASO:100, HRD:100, CAS:95, SCS:99.38, NSC:100
 });
 
-console.log('SleepS =', result);
+console.info('SleepS =', result);

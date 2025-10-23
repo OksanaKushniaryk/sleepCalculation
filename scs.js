@@ -10,5 +10,5 @@ export function SCS({ x, sigma = 0.75 }) {
   
   // === Приклад із твоїми даними ===
   const result = SCS({ x: 0.083333, sigma: 0.75 });
-  console.log('Sleep Consistency Score (SCS) =', result);
+  console.info('Sleep Consistency Score (SCS) =', result);
   

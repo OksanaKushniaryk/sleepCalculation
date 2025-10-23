@@ -1,0 +1,62 @@
+{
+  "name": "sleepcalculation",
+  "version": "1.0.0",
+  "description": "Sleep calculation and scoring system with comprehensive testing",
+  "main": "sleep_aggregator.js",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test:report": "cross-env CI=0 node --experimental-vm-modules node_modules/.bin/jest",
+    "test:ci": "cross-env CI=1 node --experimental-vm-modules node_modules/.bin/jest --runInBand",
+    "test:unit": "node --experimental-vm-modules node_modules/.bin/jest tests/unit",
+    "test:integration": "node --experimental-vm-modules node_modules/.bin/jest tests/integration",
+    "test:api": "node --experimental-vm-modules node_modules/.bin/jest tests/api",
+    "test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch",
+    "test:coverage": "node --experimental-vm-modules node_modules/.bin/jest --coverage",
+    "test:verbose": "node --experimental-vm-modules node_modules/.bin/jest --verbose",
+    "test:debug": "node --inspect-brk --experimental-vm-modules node_modules/.bin/jest --runInBand",
+    "test:api:debug": "node --inspect-brk --experimental-vm-modules node_modules/.bin/jest tests/api --runInBand",
+    "lint": "echo 'Linting not configured yet'",
+    "lint:fix": "echo 'Linting not configured yet'",
+    "dev": "node sleep_aggregator.js",
+    "start": "node sleep_aggregator.js",
+    "validate": "npm run test && npm run lint",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OksanaKushniaryk/sleepCalculation.git"
+  },
+  "keywords": [
+    "sleep",
+    "calculation",
+    "scoring",
+    "health",
+    "testing",
+    "javascript",
+    "nodejs"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/OksanaKushniaryk/sleepCalculation/issues"
+  },
+  "homepage": "https://github.com/OksanaKushniaryk/sleepCalculation#readme",
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "jest": "^30.2.0",
+    "jest-html-reporters": "^3.1.7",
+    "lint-staged": "^16.2.5",
+    "supertest": "^7.1.4"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "lint-staged": {
+    "*.js": [
+      "npm run lint:fix",
+      "npm run test:unit",
+      "git add"
+    ]
+  }
+}

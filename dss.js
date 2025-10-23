@@ -28,5 +28,5 @@ export function DSS({ deepH, deepM, coreH, coreM, remH, remM, mu = 18, sigma = 5
     mu: 18, sigma: 5
   });
   
-  console.log('Deep Sleep Score (DSS) =', result);
+  console.info('Deep Sleep Score (DSS) =', result);
   
