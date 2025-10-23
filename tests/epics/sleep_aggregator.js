@@ -1,14 +1,14 @@
 // sleep_aggregator.js
-import { TSD } from "./tsd.js";
-import { SE } from "./se.js";
-import { DSS } from "./dss.js";
-import { RSS } from "./rss.js";
-import { SOL } from "./sol.js";
-import { WASO } from "./waso.js";
-import { HRD } from "./hrd.js";
-import { CAS, midpointFromFellAsleep } from "./cas.js";
-import { SCS } from "./scs.js";
-import { NSC } from "./nsc.js";
+import { TSD } from "./sleep/tsd.js";
+import { SE } from "./sleep/se.js";
+import { DSS } from "./sleep/dss.js";
+import { RSS } from "./sleep/rss.js";
+import { SOL } from "./sleep/sol.js";
+import { WASO } from "./sleep/waso.js";
+import { HRD } from "./sleep/hrd.js";
+import { CAS, midpointFromFellAsleep } from "./sleep/cas.js";
+import { SCS } from "./sleep/scs.js";
+import { NSC } from "./sleep/nsc.js";
 
 
 function round2(n) { return Number(n.toFixed(2)); }
