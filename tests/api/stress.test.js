@@ -38,11 +38,11 @@ describe('OneVital API Stress Endpoints', () => {
   });
 
   describe('Stress Statistics', () => {
-    test('GET /api/health/stress-metric-statistics should return stress statistics', async () => {
+    test('GET /api/health/stress-historical-data should return stress statistics', async () => {
       // Use configurable date range from environment or defaults to last 30 days
       const { startDate, endDate } = getTestDateRange();
 
-      const endpoint = `/api/health/stress-metric-statistics?startDate=${startDate}&endDate=${endDate}`;
+      const endpoint = `/api/health/stress-historical-data?from=${startDate}&to=${endDate}`;
       const result = await TestHelpers.testEndpoint(endpoint, 'GET', null, 200);
       TestHelpers.validateEndpointSuccess(result);
 

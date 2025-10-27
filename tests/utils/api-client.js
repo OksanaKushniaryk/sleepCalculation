@@ -24,6 +24,11 @@ class OneVitalAPIClient {
     return this.makeRequest('/api/health/detailed', 'GET', null, userIndex);
   }
 
+  // User Endpoints
+  async getUserPersonalInfo(userIndex = 0) {
+    return this.makeRequest('/api/users/personal-info', 'GET', null, userIndex);
+  }
+
   // Generic request method with authentication
   async makeRequest(endpoint, method = 'GET', body = null, userIndex = 0) {
     // Get Bearer token for authorization
@@ -154,9 +159,29 @@ class OneVitalAPIClient {
 
     for (const credential of credentials) {
       const authResult = await this.testAuthentication(credential.index);
+      
+      // If authentication was successful, fetch personal info
+      let personalInfo = null;
+      if (authResult.success) {
+        try {
+          console.info(`📋 Fetching personal info for user ${credential.email}...`);
+          const personalInfoResult = await this.getUserPersonalInfo(credential.index);
+          
+          if (personalInfoResult.ok && personalInfoResult.data) {
+            personalInfo = personalInfoResult.data;
+            console.info(`✅ Personal info retrieved for ${credential.email}`);
+          } else {
+            console.warn(`⚠️ Failed to fetch personal info for ${credential.email}: ${personalInfoResult.status}`);
+          }
+        } catch (error) {
+          console.warn(`⚠️ Error fetching personal info for ${credential.email}: ${error.message}`);
+        }
+      }
+
       results.push({
         ...authResult,
-        email: credential.email
+        email: credential.email,
+        personalInfo
       });
     }
 

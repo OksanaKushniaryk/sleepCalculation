@@ -66,6 +66,58 @@ export const TestState = {
    */
   getAuthenticationResults() {
     return this.testResults.authentication;
+  },
+
+  /**
+   * Get personal information for a specific user by index
+   */
+  getUserPersonalInfo(userIndex = 0) {
+    const user = this.testResults.authentication.find(auth => 
+      auth.success && auth.sessionInfo?.userIndex === userIndex
+    );
+    return user?.personalInfo || null;
+  },
+
+  /**
+   * Get personal information for a specific user by email
+   */
+  getUserPersonalInfoByEmail(email) {
+    const user = this.testResults.authentication.find(auth => 
+      auth.success && auth.email === email
+    );
+    return user?.personalInfo || null;
+  },
+
+  /**
+   * Get all users with their personal information
+   */
+  getAllUsersWithPersonalInfo() {
+    return this.testResults.authentication
+      .filter(auth => auth.success && auth.personalInfo)
+      .map(auth => ({
+        userIndex: auth.sessionInfo?.userIndex,
+        email: auth.email,
+        personalInfo: auth.personalInfo
+      }));
+  },
+
+  /**
+   * Get a successful user with personal info for energy calculations
+   */
+  getSuccessfulUserWithPersonalInfo() {
+    const user = this.testResults.authentication.find(auth => 
+      auth.success && auth.personalInfo
+    );
+    
+    if (!user) {
+      return null;
+    }
+
+    return {
+      userIndex: user.sessionInfo?.userIndex || 0,
+      email: user.email,
+      personalInfo: user.personalInfo
+    };
   }
 };
 

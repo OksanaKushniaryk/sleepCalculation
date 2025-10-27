@@ -17,7 +17,6 @@
     "test:api:energy": "node --experimental-vm-modules node_modules/.bin/jest tests/api/energy.test.js",
     "test:api:activity": "node --experimental-vm-modules node_modules/.bin/jest tests/api/activity.test.js",
     "test:api:errors": "node --experimental-vm-modules node_modules/.bin/jest tests/api/error-handling.test.js",
-    "test:api:local": "node --experimental-vm-modules node_modules/.bin/jest tests/api/local-implementation.test.js",
     "test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/.bin/jest --coverage",
     "test:verbose": "node --experimental-vm-modules node_modules/.bin/jest --verbose",
