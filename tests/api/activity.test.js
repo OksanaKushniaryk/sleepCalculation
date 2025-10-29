@@ -8,18 +8,7 @@
 import 'dotenv/config';
 import {TestHelpers, TestState} from '../utils/test-helpers.js';
 import {getTestDateRange} from '../utils/date-helper.js';
-import {calculateStepsScore, compareStepsScores} from '../epics/activity/steps-score.js';
-import {calculateActiveMinutesScore, compareActiveMinutesScores} from '../epics/activity/active-minutes-score.js';
-import {calculateConsistencyScore, compareConsistencyScores} from '../epics/activity/consistency-score.js';
-import {
-    calculateActivityLevelConsistencyScore,
-    compareActivityLevelConsistencyScores
-} from '../epics/activity/activity-level-consistency.js';
-import {
-    calculateTotalEnergyCreditScore,
-    compareTotalEnergyCreditScores
-} from '../epics/activity/total-energy-credit-score.js';
-import {calculateFinalActivityScore, compareFinalActivityScores} from '../epics/activity/final-activity-score.js';
+import { activityScore } from '../epics/activity_aggregator.js';
 
 describe('OneVital API Activity Endpoints', () => {
     beforeAll(async () => {
@@ -120,9 +109,9 @@ async function processDayActivityData(dailyData, dayNumber, startDate, endDate) 
     validateActivityScoresStructure(dailyData);
     console.info(`API Activity Score: ${dailyData.ActivityScore.value}`);
 
-    // Extract metrics for energy calculation if available
+    // Extract metrics for activity calculation if available
     if (dailyData.metrics) {
-        await calculateAndCompareEnergyScores(dailyData, startDate, endDate);
+        await calculateAndCompareActivityScores(dailyData, startDate, endDate);
     }
 }
 
@@ -184,201 +173,165 @@ function addMetricValidation(metricName, apiValue, calculatedValue, tolerance, v
 }
 
 /**
- * Calculate and compare energy scores with API data
+ * Calculate and compare activity scores with API data using activity aggregator
  */
-async function calculateAndCompareEnergyScores(dailyData, startDate, endDate) {
-    console.info('\n--- ENERGY SCORE CALCULATION ---');
+async function calculateAndCompareActivityScores(dailyData, startDate, endDate) {
+    console.info('\n--- ACTIVITY SCORE CALCULATION ---');
     const metrics = dailyData.metrics;
+
+    // Use activity aggregator to calculate all metrics at once
+    const activityScoreParams = {
+        // Steps data
+        stepsTodayX: metrics.stepsTodayX,
+        baselineStepsMu: metrics.baselineStepsMu,
+        steps7dStdDev: metrics.steps7dStdDev,
+        steps7dMean: metrics.steps7dMean,
+        steps7dArray: metrics.steps7dArray,
+        
+        // MVPA data
+        mvpaMinutesToday_m: metrics.mvpaMinutesToday_m,
+        mvpaRecentMean: metrics.mvpaRecentMean,
+        mvpaMinRecommendedByAge: metrics.mvpaMinRecommendedByAge,
+        ageGroup: metrics.ageGroup,
+        
+        // Activity distribution
+        stepsBins: metrics.stepsBins,
+        giniMeanStepsPerBin: metrics.giniMeanStepsPerBin,
+        
+        // Energy credit
+        energyCreditCurrentScore: metrics.energyCreditCurrentScore,
+        energyCreditRollingAvg: metrics.energyCreditRollingAvg
+    };
+
+    // Calculate all activity metrics using aggregator
+    const finalResult = activityScore(activityScoreParams);
+
+    console.info('\n--- ACTIVITY METRICS BREAKDOWN ---');
+    console.table({
+        stepsScore: finalResult.stepsScore,
+        activeMinutesScore: finalResult.activeMinutesScore,
+        consistencyScore: finalResult.consistencyScore,
+        activityLevelConsistencyScore: finalResult.activityLevelConsistencyScore,
+        totalEnergyCreditScore: finalResult.totalEnergyCreditScore,
+        finalActivityScore: finalResult.finalActivityScore
+    });
 
     // Collect validation results for all activity metrics
     const validationResults = [];
     const failures = [];
 
-    console.info('\n--- STEPS SCORE COMPARISON ---');
-
-    const calculatedStepsScore = calculateStepsScore(metrics.stepsTodayX, metrics.baselineStepsMu, metrics.steps7dStdDev, metrics.steps7dMean);
-    const apiStepsScore = dailyData.StepsScore;
-
-    const comparison = compareStepsScores(calculatedStepsScore, apiStepsScore, metrics);
-
-    addMetricValidation(
-        'StepsScore',
-        comparison.apiScore.value,
-        comparison.calculatedScore.value,
-        0.1,
-        validationResults,
-        failures,
-        {
-            steps: metrics.stepsTodayX,
-            baseline: metrics.baselineStepsMu,
-            stdDev: metrics.steps7dStdDev
-        }
-    );
-
-    console.info('\n--- ACTIVE MINUTES SCORE COMPARISON ---');
-
-    const calculatedActiveMinutesScore = calculateActiveMinutesScore(
-        metrics.mvpaMinutesToday_m,
-        metrics.mvpaRecentMean,
-        metrics.mvpaMinRecommendedByAge,
-        metrics.ageGroup
-    );
-    const apiActiveMinutesScore = dailyData.ActiveMinutesScore;
-
-    const activeMinutesComparison = compareActiveMinutesScores(calculatedActiveMinutesScore, apiActiveMinutesScore, metrics);
-
-    addMetricValidation(
-        'ActiveMinutesScore',
-        activeMinutesComparison.apiScore.value,
-        activeMinutesComparison.calculatedScore.value,
-        0.1,
-        validationResults,
-        failures,
-        {
-            mvpaToday: metrics.mvpaMinutesToday_m,
-            mvpaRecentMean: metrics.mvpaRecentMean,
-            mvpaRecommended: metrics.mvpaMinRecommendedByAge,
-            ageGroup: metrics.ageGroup
-        }
-    );
-
-    console.info(activeMinutesComparison.message);
-
-    console.info('\n--- CONSISTENCY SCORE COMPARISON ---');
-
-    const calculatedConsistencyScore = calculateConsistencyScore(
-        metrics.steps7dArray,
-        metrics.steps7dMean,
-        metrics.steps7dStdDev
-    );
-    const apiConsistencyScore = dailyData.ConsistencyScore;
-
-    const consistencyComparison = compareConsistencyScores(calculatedConsistencyScore, apiConsistencyScore, metrics);
-
-    addMetricValidation(
-        'ConsistencyScore',
-        consistencyComparison.apiScore.value,
-        consistencyComparison.calculatedScore.value,
-        0.1,
-        validationResults,
-        failures,
-        {
-            steps7dMean: metrics.steps7dMean,
-            steps7dStdDev: metrics.steps7dStdDev,
-            calculatedStdDev: metrics.steps7dArray ? 'from_array' : 'from_metric'
-        }
-    );
-
-    console.info('\n--- ACTIVITY LEVEL CONSISTENCY SCORE COMPARISON ---');
-
-    const calculatedActivityLevelConsistencyScore = calculateActivityLevelConsistencyScore(
-        metrics.stepsBins,
-        metrics.giniMeanStepsPerBin
-    );
-    const apiActivityLevelConsistencyScore = dailyData.ActivityLevelConsistency;
-
-    const activityLevelConsistencyComparison = compareActivityLevelConsistencyScores(calculatedActivityLevelConsistencyScore, apiActivityLevelConsistencyScore, metrics);
-
-    addMetricValidation(
-        'ActivityLevelConsistency',
-        activityLevelConsistencyComparison.apiScore.value,
-        activityLevelConsistencyComparison.calculatedScore.value,
-        0.1,
-        validationResults,
-        failures,
-        {
-            giniMeanStepsPerBin: metrics.giniMeanStepsPerBin,
-            stepsBins: metrics.stepsBins ? `${metrics.stepsBins.length} bins` : 'N/A',
-            calculationMethod: metrics.giniMeanStepsPerBin !== undefined ? 'from_gini_metric' : 'from_bins_array'
-        }
-    );
-
-    console.info('\n--- TOTAL ENERGY CREDIT SCORE COMPARISON ---');
-
-    const calculatedTotalEnergyCreditScore = calculateTotalEnergyCreditScore(
-        metrics.energyCreditCurrentScore,
-        metrics.energyCreditRollingAvg
-    );
-    const apiTotalEnergyCreditScore = dailyData.TotalEnergyCreditScore;
-
-    const totalEnergyCreditComparison = compareTotalEnergyCreditScores(calculatedTotalEnergyCreditScore, apiTotalEnergyCreditScore, metrics);
-
-    addMetricValidation(
-        'TotalEnergyCreditScore',
-        totalEnergyCreditComparison.apiScore.value,
-        totalEnergyCreditComparison.calculatedScore.value,
-        0.1,
-        validationResults,
-        failures,
-        {
-            energyCreditCurrentScore: metrics.energyCreditCurrentScore,
-            energyCreditRollingAvg: metrics.energyCreditRollingAvg,
-            calculatedSum: (metrics.energyCreditCurrentScore || 0) + (metrics.energyCreditRollingAvg || 0)
-        }
-    );
-
-    // Calculate and compare Final Activity Score using all component scores
-    console.info('\n--- FINAL ACTIVITY SCORE COMPARISON ---');
-
-    const componentScores = {
-        stepsScore: calculatedStepsScore.value,
-        activeMinutesScore: calculatedActiveMinutesScore.value,
-        consistencyScore: calculatedConsistencyScore.value,
-        activityLevelConsistencyScore: calculatedActivityLevelConsistencyScore.value,
-        totalEnergyCreditScore: calculatedTotalEnergyCreditScore.value
+    // Define tolerance values
+    const tolerances = {
+        stepsScore: process.env.STEPS_SCORE_COMPARE_TOLERANCE || 0.1,
+        activeMinutesScore: process.env.ACTIVE_MINUTES_SCORE_COMPARE_TOLERANCE || 0.1,
+        consistencyScore: process.env.CONSISTENCY_SCORE_COMPARE_TOLERANCE || 0.1,
+        activityLevelConsistencyScore: process.env.ACTIVITY_LEVEL_CONSISTENCY_COMPARE_TOLERANCE || 0.1,
+        totalEnergyCreditScore: process.env.TOTAL_ENERGY_CREDIT_SCORE_COMPARE_TOLERANCE || 0.1,
+        finalActivityScore: process.env.FINAL_ACTIVITY_SCORE_COMPARE_TOLERANCE || 0.1
     };
 
-    const calculatedFinalActivityScore = calculateFinalActivityScore(
-        componentScores.stepsScore,
-        componentScores.activeMinutesScore,
-        componentScores.consistencyScore,
-        componentScores.activityLevelConsistencyScore,
-        componentScores.totalEnergyCreditScore
-    );
-
-    const apiFinalActivityScore = dailyData.ActivityScore;
-    const finalActivityComparison = compareFinalActivityScores(calculatedFinalActivityScore, apiFinalActivityScore, componentScores);
-
+    // Validate Steps Score
     addMetricValidation(
-        'FinalActivityScore',
-        finalActivityComparison.apiScore.value,
-        finalActivityComparison.calculatedScore.value,
-        0.1,
+        'StepsScore',
+        dailyData.StepsScore.value,
+        finalResult.stepsScore,
+        tolerances.stepsScore,
         validationResults,
         failures,
-        {
-            stepsScore: componentScores.stepsScore,
-            activeMinutesScore: componentScores.activeMinutesScore,
-            consistencyScore: componentScores.consistencyScore,
-            activityLevelConsistencyScore: componentScores.activityLevelConsistencyScore,
-            totalEnergyCreditScore: componentScores.totalEnergyCreditScore,
-            weightedSum: calculatedFinalActivityScore.value
+        { steps: metrics.stepsTodayX, baseline: metrics.baselineStepsMu, stdDev: metrics.steps7dStdDev }
+    );
+
+    // Validate Active Minutes Score
+    addMetricValidation(
+        'ActiveMinutesScore',
+        dailyData.ActiveMinutesScore.value,
+        finalResult.activeMinutesScore,
+        tolerances.activeMinutesScore,
+        validationResults,
+        failures,
+        { mvpaToday: metrics.mvpaMinutesToday_m, mvpaRecentMean: metrics.mvpaRecentMean, ageGroup: metrics.ageGroup }
+    );
+
+    // Validate Consistency Score
+    addMetricValidation(
+        'ConsistencyScore',
+        dailyData.ConsistencyScore.value,
+        finalResult.consistencyScore,
+        tolerances.consistencyScore,
+        validationResults,
+        failures,
+        { steps7dMean: metrics.steps7dMean, steps7dStdDev: metrics.steps7dStdDev }
+    );
+
+    // Validate Activity Level Consistency Score
+    addMetricValidation(
+        'ActivityLevelConsistency',
+        dailyData.ActivityLevelConsistency.value,
+        finalResult.activityLevelConsistencyScore,
+        tolerances.activityLevelConsistencyScore,
+        validationResults,
+        failures,
+        { giniMeanStepsPerBin: metrics.giniMeanStepsPerBin, stepsBins: metrics.stepsBins ? `${metrics.stepsBins.length} bins` : 'N/A' }
+    );
+
+    // Validate Total Energy Credit Score
+    addMetricValidation(
+        'TotalEnergyCreditScore',
+        dailyData.TotalEnergyCreditScore.value,
+        finalResult.totalEnergyCreditScore,
+        tolerances.totalEnergyCreditScore,
+        validationResults,
+        failures,
+        { energyCreditCurrentScore: metrics.energyCreditCurrentScore, energyCreditRollingAvg: metrics.energyCreditRollingAvg }
+    );
+
+    // Validate Final Activity Score
+    addMetricValidation(
+        'FinalActivityScore',
+        dailyData.ActivityScore.value,
+        finalResult.finalActivityScore,
+        tolerances.finalActivityScore,
+        validationResults,
+        failures,
+        { 
+            stepsScore: finalResult.stepsScore,
+            activeMinutesScore: finalResult.activeMinutesScore,
+            consistencyScore: finalResult.consistencyScore,
+            activityLevelConsistencyScore: finalResult.activityLevelConsistencyScore,
+            totalEnergyCreditScore: finalResult.totalEnergyCreditScore
         }
     );
 
     const passCount = validationResults.filter(r => r.passed).length;
     const totalCount = validationResults.length;
 
-    if (totalCount > 0) {
-        console.info(`\n📊 Activity Metrics Validation Summary: ${passCount}/${totalCount} metrics passed validation`);
+    console.info(`\n📊 Activity Metrics Validation Summary: ${passCount}/${totalCount} metrics passed validation`);
 
-        // Throw error with all failures if any exist
-        if (failures.length > 0) {
-            throw new Error(`\n🔍 ACTIVITY METRICS VALIDATION FAILURES (${failures.length}/${totalCount} failed):\n\n` +
-                `🔍 INPUT METRICS (from Backend side):\n\n` +
-                JSON.stringify(metrics, null, 2) +
-                `\n\n🔍 API RESULTS (from Backend side):\n\n` +
-                JSON.stringify({
-                    StepsScore: dailyData.StepsScore,
-                    ConsistencyScore: dailyData.ConsistencyScore,
-                    ActiveMinutesScore: dailyData.ActiveMinutesScore,
-                    ActivityLevelConsistency: dailyData.ActivityLevelConsistency,
-                    TotalEnergyCreditScore: dailyData.TotalEnergyCreditScore,
-                    ActivityScore: dailyData.ActivityScore
-                }, null, 2) +
-                `\n\n🔍 Issues:\n\n` +
-                failures.join('\n\n') +
-                `\n\n📊 Overall: ${passCount}/${totalCount} metrics passed validation`);
-        }
+    // Throw error with all failures if any exist
+    if (failures.length > 0) {
+        throw new Error(`\n🔍 ACTIVITY METRICS VALIDATION FAILURES (${failures.length}/${totalCount} failed):\n\n` +
+            `🔍 INPUT METRICS (from Backend side):\n\n` +
+            JSON.stringify(activityScoreParams, null, 2) +
+            `\n\n🔍 CALCULATED RESULTS (Aggregator Output):\n\n` +
+            JSON.stringify({
+                stepsScore: finalResult.stepsScore,
+                activeMinutesScore: finalResult.activeMinutesScore,
+                consistencyScore: finalResult.consistencyScore,
+                activityLevelConsistencyScore: finalResult.activityLevelConsistencyScore,
+                totalEnergyCreditScore: finalResult.totalEnergyCreditScore,
+                finalActivityScore: finalResult.finalActivityScore
+            }, null, 2) +
+            `\n\n🔍 API RESULTS (from Backend side):\n\n` +
+            JSON.stringify({
+                StepsScore: dailyData.StepsScore,
+                ActiveMinutesScore: dailyData.ActiveMinutesScore,
+                ConsistencyScore: dailyData.ConsistencyScore,
+                ActivityLevelConsistency: dailyData.ActivityLevelConsistency,
+                TotalEnergyCreditScore: dailyData.TotalEnergyCreditScore,
+                ActivityScore: dailyData.ActivityScore
+            }, null, 2) +
+            `\n\n🔍 Issues:\n\n` +
+            failures.join('\n\n') +
+            `\n\n📊 Overall: ${passCount}/${totalCount} metrics passed validation`);
     }
 }
