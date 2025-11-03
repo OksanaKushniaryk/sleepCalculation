@@ -16,5 +16,5 @@ export function HRD({ restingHR, sleepHR, mu = 20, sigma = 5 }) {
   
   // === Приклад із твоїми даними ===
   const result = HRD({ restingHR: 67, sleepHR: 49, mu: 20, sigma: 5 });
-  console.log('Heart Rate Deviation Score (HRD) =', result);
+  console.info('Heart Rate Deviation Score (HRD) =', result);
   

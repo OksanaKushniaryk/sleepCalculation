@@ -26,16 +26,16 @@ function sleepScore({
 
 // === Приклад із твоїми значеннями ===
 const subScores = {
-  TSD: 100, 
-  SE: 99.42, 
-  DSS: 65.13, 
-  RSS: 77.92, 
+  TSD: 100,
+  SE: 99.42,
+  DSS: 65.13,
+  RSS: 77.92,
   SSD: 71.53,
-  SOL: 100, 
-  WASO: 100, 
-  HRD: 100, 
-  CAS: 51, 
-  SCS: 89.68, 
+  SOL: 100,
+  WASO: 100,
+  HRD: 100,
+  CAS: 51,
+  SCS: 89.68,
   NSC: 100
 };
 

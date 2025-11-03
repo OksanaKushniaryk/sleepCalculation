@@ -45,7 +45,7 @@ export function SSD({ deepH, deepM, coreH, coreM, remH, remM, dssMu = 18, dssSig
     remH:  1,  remM: 51
   });
   
-  console.log('DSS =', dss);
-  console.log('RSS =', rss);
-  console.log('Sleep Stage Distribution Score (SSD) =', ssd);
+  console.info('DSS =', dss);
+  console.info('RSS =', rss);
+  console.info('Sleep Stage Distribution Score (SSD) =', ssd);
   

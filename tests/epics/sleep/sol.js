@@ -20,5 +20,5 @@ export function SOL({ x, mu = 15, sigma = 10 }) {
   const testValue = 0; // тут підставляєш значення x
   const result = SOL({ x: testValue });
   
-  console.log(`Sleep Onset Latency Score (SOL) = ${result}`);
+  console.info(`Sleep Onset Latency Score (SOL) = ${result}`);
   

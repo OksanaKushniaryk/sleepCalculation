@@ -11,5 +11,5 @@ export function WASO({ x, sigma = 20 }) {
   
   // === Приклад із твоїми даними ===
   const result = WASO({ x: 0, sigma: 20 });
-  console.log('Wake After Sleep Onset (WASO) Score =', result);
+  console.info('Wake After Sleep Onset (WASO) Score =', result);
   

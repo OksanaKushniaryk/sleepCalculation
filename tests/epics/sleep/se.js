@@ -30,5 +30,5 @@ export function SE({ deepH, deepM, coreH, coreM, remH, remM, awakeH = 0, awakeM 
     awakeH: 0, awakeM: 0
   });
   
-  console.log('Sleep Efficiency (SE) =', result);
+  console.info('Sleep Efficiency (SE) =', result);
   
