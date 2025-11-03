@@ -47,6 +47,7 @@ function sleepScore(values) {
     fellAsleep, tst,                           // Sleep timing
     observedCycles,                            // Sleep architecture
     scsX,                                      // Consistency metric
+    wasoMinutes, sleepOnsetLatencyMinutes
   } = values;
 
   // === CALCULATE INDIVIDUAL SLEEP METRICS (0-100 each) ===
@@ -67,12 +68,10 @@ function sleepScore(values) {
   const ssd = (rss / 2) + (dss / 2);
   
   // Sleep Onset Latency (10% weight) - How quickly you fall asleep
-  // TODO: Replace with actual sleep onset data instead of hardcoded 0
-  const sol = SOL({ x: 0, mu: 15, sigma: 10 }); // Currently using 0 minutes (instant sleep)
+  const sol = SOL({ x: sleepOnsetLatencyMinutes || 0, mu: 15, sigma: 10 }); // Currently using 0 minutes (instant sleep)
   
   // Wake After Sleep Onset (5% weight) - Sleep maintenance quality
-  // TODO: Replace with actual wake episode data instead of hardcoded 0
-  const waso = WASO({ x: 0 }); // Currently using 0 minutes (no awakenings)
+  const waso = WASO({ x: wasoMinutes || 0 }); // Currently using 0 minutes (no awakenings)
   
   // Heart Rate Deviation (5% weight) - Cardiovascular recovery during sleep
   const hrd = HRD({ restingHR, sleepHR });

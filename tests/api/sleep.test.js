@@ -249,7 +249,9 @@ async function validateSleepScoreFunction(firstDay) {
         fellAsleep,
         tst,
         observedCycles: metrics.sleepCyclesCount,
-        scsX: metrics.averageDayToDayVariationHours
+        scsX: metrics.averageDayToDayVariationHours,
+        wasoMinutes: metrics.wasoMinutes,
+        sleepOnsetLatencyMinutes: metrics.sleepOnsetLatencyMinutes,
     };
 
     console.info('SleepScore parameters:', sleepScoreParams);
