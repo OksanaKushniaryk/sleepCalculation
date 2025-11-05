@@ -9,7 +9,10 @@ const sleep = (ms) => new Promise(res => setTimeout(res, ms));
 
 /**
  * Calculate Steps Score based on OneVital formula
- * @param {Object} metrics - Metrics object containing step data
+ * @param {number} stepsTodayX - Steps taken today
+ * @param {number} baselineStepsMu - Personal baseline steps (mean)
+ * @param {number} steps7dStdDev - 7-day standard deviation of steps
+ * @param {number} steps7dMean - 7-day mean of steps
  * @returns {Object} Steps score with value, normDeviation, and trend
  */
 export async function calculateStepsScore(stepsTodayX, baselineStepsMu, steps7dStdDev, steps7dMean) {
@@ -24,7 +27,7 @@ export async function calculateStepsScore(stepsTodayX, baselineStepsMu, steps7dS
     if (steps7dTotal > (baseline * 5)) {
         // Using simplified weighted average (more recent days weighted higher)
         // Weights: [1, 1, 1, 1, 2, 2, 3] for 7 days, normalized to /11
-        // todo: we need to calculate new baseline = [1 * stepsTodayX, 1 * stepsTodayX, 1 * stepsTodayX, 1 * stepsTodayX, 2 * stepsTodayX, 2 * stepsTodayX, 3 * stepsTodayX] / 11
+        // todo: we need to calculate new baseline = [1 * steps1DayX, 1 * steps2DayX, 1 * steps3DayX, 1 * steps4DayX, 2 * steps5DayX, 2 * steps6DayX, 3 * steps7DayX] / 11
         baseline = steps7dMean; // Simplified to use mean for this implementation
     }
 
@@ -52,7 +55,7 @@ export async function calculateStepsScore(stepsTodayX, baselineStepsMu, steps7dS
     };
 }
 
-const result = await calculateStepsScore(4000, 8000, 2000, 5248);
+const result = await calculateStepsScore(3446, 8000, 2000, 5248);
 
 console.info('calculate Steps Score =', result);
 
