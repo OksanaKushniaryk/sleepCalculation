@@ -49,8 +49,8 @@ export async function calculateStepsScore(stepsTodayX, baselineStepsMu, steps7dS
     }
 
     return {
-        value: Math.round(stepsScore),
-        normDeviation: Math.round(normDeviation * 100) / 100, // Round to 2 decimal places
+        value: Math.round(stepsScore), // stepsScore: 7.484286474863389
+        normDeviation: Math.round(normDeviation * 100) / 100, // Round to 2 decimal places -- normDeviation: -2.277
         trend: null // Not calculated in this implementation
     };
 }
