@@ -58,6 +58,8 @@ export function calculateActiveMinutesScore(mvpaMinutesToday, mvpaRecentMean, mv
 }
 
 
+calculateActiveMinutesScore()
+
 /**
  * Compare calculated active minutes score with API result and provide analysis
  * @param {Object} calculatedScore - Our calculated active minutes score
