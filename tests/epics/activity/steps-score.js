@@ -1,7 +1,7 @@
 /**
  * Steps Score Calculation
- * 
- * Implements the OneVital Steps Score formula that quantifies how close 
+ *
+ * Implements the OneVital Steps Score formula that quantifies how close
  * the user is to their daily step goal or baseline.
  */
 
@@ -12,23 +12,29 @@ const sleep = (ms) => new Promise(res => setTimeout(res, ms));
  * @param {number} stepsTodayX - Steps taken today
  * @param {number} baselineStepsMu - Personal baseline steps (mean)
  * @param {number} steps7dStdDev - 7-day standard deviation of steps
- * @param {number} steps7dMean - 7-day mean of steps
+ * @param {number} steps7dTotalArray - 7-day value of steps
  * @returns {Object} Steps score with value, normDeviation, and trend
  */
-export async function calculateStepsScore(stepsTodayX, baselineStepsMu, steps7dStdDev, steps7dMean) {
-    await sleep(2000);
+export function calculateStepsScore(stepsTodayX, baselineStepsMu, steps7dStdDev, steps7dTotalArray) {
     // Use provided baseline or calculate from 7-day data
     let baseline = baselineStepsMu || 8000; // Default baseline
-    
+
     // Calculate 7-day total for baseline validation
-    const steps7dTotal = steps7dMean * 7;
-    
+    const steps7dTotal = (steps7dTotalArray || []).reduce((acc, steps) => {
+        acc += steps || 0;
+        return acc;
+    }, 0);
+
     // If we have sufficient 7-day data, use weighted average as baseline
     if (steps7dTotal > (baseline * 5)) {
         // Using simplified weighted average (more recent days weighted higher)
         // Weights: [1, 1, 1, 1, 2, 2, 3] for 7 days, normalized to /11
-        // todo: we need to calculate new baseline = [1 * steps1DayX, 1 * steps2DayX, 1 * steps3DayX, 1 * steps4DayX, 2 * steps5DayX, 2 * steps6DayX, 3 * steps7DayX] / 11
-        baseline = steps7dMean; // Simplified to use mean for this implementation
+
+        const totalWeightSteps = [1, 1, 1, 1, 2, 2, 3].reduce((acc, weight, index) => {
+            acc += (weight * (steps7dTotalArray[index] || 0)) || 0;
+            return acc;
+        }, 0);
+        baseline = Math.round(totalWeightSteps / 11);
     }
 
     const x = stepsTodayX;
@@ -55,9 +61,17 @@ export async function calculateStepsScore(stepsTodayX, baselineStepsMu, steps7dS
     };
 }
 
-const result = await calculateStepsScore(3446, 8000, 2000, 5248);
+const mockTest = async () => {
+    await sleep(2000);
+    /// real test
+    const result = calculateStepsScore(3446, 8000, 2000, [2502, 3446, 4383, 7187, 6375, 4733, 3446]);
 
-console.info('calculate Steps Score =', result);
+    /// more than baseline (to check formula)
+    // const result = calculateStepsScore(3446, 8000, 2000, [7502, 6446, 4383, 7187, 6375, 4733, 3446]);
+
+    console.info('calculate Steps Score =', result);
+}
+mockTest();
 
 /**
  * Compare calculated steps score with API result and provide analysis
@@ -75,7 +89,7 @@ export function compareStepsScores(calculatedScore, apiScore, metrics) {
     }
 
     const valueDiff = Math.abs(calculatedScore.value - apiScore.value);
-    const normDevDiff = apiScore.normDeviation !== undefined ? 
+    const normDevDiff = apiScore.normDeviation !== undefined ?
         Math.abs(calculatedScore.normDeviation - apiScore.normDeviation) : null;
 
     const isWithinRange = valueDiff <= 5; // Allow 5 point difference
@@ -93,7 +107,7 @@ export function compareStepsScores(calculatedScore, apiScore, metrics) {
             steps7dStdDev: metrics.steps7dStdDev,
             steps7dMean: metrics.steps7dMean
         },
-        message: isWithinRange ? 
+        message: isWithinRange ?
             '✅ Steps score calculation matches API within acceptable range' :
             `⚠️ Steps score calculation differs significantly from API (diff: ${valueDiff})`
     };
