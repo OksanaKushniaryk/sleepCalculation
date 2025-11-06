@@ -54,9 +54,9 @@ export function calculateConsistencyScore(steps7dArray, steps7dMean, steps7dStdD
 const mockTest = async () => {
     await sleep(2000);
     /// real test
-    // const result = calculateConsistencyScore([2502, 3446, 4383, 7187, 6375, 4733, 3446], null, null);
+    const result = calculateConsistencyScore([2502, 3446, 4383, 7187, 6375, 4733, 3446], null, null);
     // const result = calculateConsistencyScore([2502, 3446, 4383, 7187, 6375, 4733, 3446], 4581, null);
-    const result = calculateConsistencyScore([2502, 3446, 4383, 7187, 6375, 4733, 3446], 4581, 1557);
+    // const result = calculateConsistencyScore([2502, 3446, 4383, 7187, 6375, 4733, 3446], 4581, 1557);
 
     console.info('calculate Consistency Score =', result);
 }

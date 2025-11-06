@@ -6,6 +6,8 @@
  * High Gini = clumped activity = not good
  */
 
+import {sleep} from "../../utils/async-helper.js";
+
 /**
  * Calculate Activity Level Consistency Score based on OneVital formula
  * @param {Array} stepsBins - Array of step counts across different time bins
@@ -14,19 +16,16 @@
  */
 export function calculateActivityLevelConsistencyScore(stepsBins, giniMeanStepsPerBin) {
     // Use provided Gini coefficient or calculate from bins
-    let giniCoefficient = giniMeanStepsPerBin;
-    
-    if (!giniCoefficient && stepsBins && Array.isArray(stepsBins) && stepsBins.length > 0) {
-        giniCoefficient = calculateGiniCoefficient(stepsBins);
+    let giniCoefficient = 0;
+
+    if (!stepsBins || !Array.isArray(stepsBins) || stepsBins.length === 0) {
+        throw new Error('Required stepsBins array to calculate ActivityLevelConsistencyScore');
     }
     
-    // Default to provided gini or reasonable default if unavailable
-    if (giniCoefficient === undefined || giniCoefficient === null) {
-        giniCoefficient = giniMeanStepsPerBin || 0;
-    }
+    giniCoefficient = calculateGiniCoefficient(stepsBins);
     
     // Handle edge cases
-    const mean = stepsBins ? stepsBins.reduce((sum, steps) => sum + steps, 0) / stepsBins.length : 0;
+    const mean = giniMeanStepsPerBin || stepsBins ? stepsBins.reduce((sum, steps) => sum + steps, 0) / stepsBins.length : 0;
     const stdDev = stepsBins ? calculateStandardDeviation(stepsBins, mean) : 0;
     
     let consistencyScore;
@@ -111,6 +110,17 @@ function calculateStandardDeviation(values, mean) {
     
     return Math.sqrt(variance);
 }
+
+
+const mockTest = async () => {
+    await sleep(2000);
+    /// real test
+    // const result = calculateActivityLevelConsistencyScore([500, 520, 480, 510, 530], 0.02);
+    const result = calculateActivityLevelConsistencyScore([500, 520, 480, 510, 530], undefined);
+
+    console.info('calculate Activity Level Consistency Score =', result);
+}
+mockTest();
 
 /**
  * Compare calculated activity level consistency score with API result and provide analysis
