@@ -5,6 +5,8 @@
  * to recommended targets based on age group.
  */
 
+import {sleep} from "../../utils/async-helper.js";
+
 /**
  * Calculate Active Minutes Score based on OneVital formula
  * @param {number} mvpaMinutesToday - Today's MVPA minutes
@@ -58,7 +60,14 @@ export function calculateActiveMinutesScore(mvpaMinutesToday, mvpaRecentMean, mv
 }
 
 
-calculateActiveMinutesScore()
+const mockTest = async () => {
+    await sleep(2000);
+    /// real test
+    const result = calculateActiveMinutesScore(2, 9, null, 'adult');
+
+    console.info('calculate Active Minutes Score =', result);
+}
+mockTest();
 
 /**
  * Compare calculated active minutes score with API result and provide analysis

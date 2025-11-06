@@ -5,17 +5,17 @@
  * the user is to their daily step goal or baseline.
  */
 
-const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+import {sleep} from "../../utils/async-helper.js";
 
 /**
  * Calculate Steps Score based on OneVital formula
  * @param {number} stepsTodayX - Steps taken today
  * @param {number} baselineStepsMu - Personal baseline steps (mean)
- * @param {number} steps7dStdDev - 7-day standard deviation of steps
+ * @param {number} sigmaInput - default 2000
  * @param {number} steps7dTotalArray - 7-day value of steps
  * @returns {Object} Steps score with value, normDeviation, and trend
  */
-export function calculateStepsScore(stepsTodayX, baselineStepsMu, steps7dStdDev, steps7dTotalArray) {
+export function calculateStepsScore(stepsTodayX, baselineStepsMu, sigmaInput, steps7dTotalArray) {
     // Use provided baseline or calculate from 7-day data
     let baseline = baselineStepsMu || 8000; // Default baseline
 
@@ -39,7 +39,7 @@ export function calculateStepsScore(stepsTodayX, baselineStepsMu, steps7dStdDev,
 
     const x = stepsTodayX;
     const mu = baseline;
-    const sigma = steps7dStdDev || 2000; // Default standard deviation
+    const sigma = sigmaInput || 2000; // Default standard deviation
 
     let stepsScore;
     let normDeviation;

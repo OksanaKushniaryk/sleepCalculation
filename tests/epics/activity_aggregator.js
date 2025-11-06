@@ -56,7 +56,7 @@ function activityScore(values) {
   const stepsScore = calculateStepsScore(
     stepsTodayX,
     baselineStepsMu,
-    steps7dStdDev,
+    2000,
     steps7dMean
   );
   

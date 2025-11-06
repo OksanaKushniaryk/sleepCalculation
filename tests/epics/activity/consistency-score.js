@@ -5,6 +5,8 @@
  * Less deviation = better health patterns.
  */
 
+import {sleep} from "../../utils/async-helper.js";
+
 /**
  * Calculate Consistency Score based on OneVital formula
  * @param {Array} steps7dArray - Array of daily step counts for the past 7 days
@@ -47,6 +49,18 @@ export function calculateConsistencyScore(steps7dArray, steps7dMean, steps7dStdD
         trend: null // Not calculated in this implementation
     };
 }
+
+
+const mockTest = async () => {
+    await sleep(2000);
+    /// real test
+    // const result = calculateConsistencyScore([2502, 3446, 4383, 7187, 6375, 4733, 3446], null, null);
+    // const result = calculateConsistencyScore([2502, 3446, 4383, 7187, 6375, 4733, 3446], 4581, null);
+    const result = calculateConsistencyScore([2502, 3446, 4383, 7187, 6375, 4733, 3446], 4581, 1557);
+
+    console.info('calculate Consistency Score =', result);
+}
+mockTest();
 
 /**
  * Compare calculated consistency score with API result and provide analysis
