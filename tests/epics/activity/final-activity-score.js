@@ -1,10 +1,17 @@
 /**
  * Final Activity Score Calculation
- * 
+ *
  * Combines all individual activity metrics into a weighted final activity score.
- * Uses the OneVital weighted formula combining Steps, Active Minutes, Consistency, 
+ * Uses the OneVital weighted formula combining Steps, Active Minutes, Consistency,
  * Gini Coefficient, and Total Energy Credit scores.
  */
+
+import {sleep} from "../../utils/async-helper.js";
+import {mockStepsScoreTest} from "./steps-score.js";
+import {mockActivityMinutesScoreTest} from "./active-minutes-score.js";
+import {mockConsistencyScoreTest} from "./consistency-score.js";
+import {mockActivityLevelConsistencyScoreTest} from "./activity-level-consistency.js";
+import {mockTotalEnergyCreditScoreTest} from "./total-energy-credit-score.js";
 
 /**
  * Calculate Final Activity Score based on OneVital weighted formula
@@ -17,21 +24,46 @@
  * @returns {Object} Final activity score with value, components, and trend
  */
 export function calculateFinalActivityScore(
-    stepsScore, 
-    activeMinutesScore, 
-    consistencyScore, 
-    activityLevelConsistencyScore, 
+    stepsScore,
+    activeMinutesScore,
+    consistencyScore,
+    activityLevelConsistencyScore,
     totalEnergyCreditScore,
-    options = {}
 ) {
     // Default weights from OneVital formula
-    const weights = {
-        stepsScore: options.stepsWeight || 0.25,           // 25%
-        activeMinutesScore: options.activeMinutesWeight || 0.25,  // 25%
-        consistencyScore: options.consistencyWeight || 0.15,     // 15%
-        activityLevelConsistencyScore: options.giniWeight || 0.10,  // 10% (can be 0)
-        totalEnergyCreditScore: options.energyCreditWeight || 0.25  // 25% (can be 35%)
+    let weights = {
+        stepsScore: 0.25,           // 25%
+        activeMinutesScore: 0.25,  // 25%
+        consistencyScore: 0.15,     // 15%
+        activityLevelConsistencyScore: 0.10,  // 10%
+        totalEnergyCreditScore: 0.25  // 25%
     };
+
+    if (!consistencyScore && consistencyScore !== 0 && !totalEnergyCreditScore && totalEnergyCreditScore !== 0) {
+        weights = {
+            stepsScore: 0.385,           // 38.5%
+            activeMinutesScore: 0.385,  // 38.5%
+            consistencyScore: 0,
+            activityLevelConsistencyScore: 0.23,  // 23%
+            totalEnergyCreditScore: 0
+        };
+    } else if (!consistencyScore && consistencyScore !== 0) {
+        weights = {
+            stepsScore: 0.294,           // 29.4%
+            activeMinutesScore: 0.294,  // 29.4%
+            consistencyScore: 0,
+            activityLevelConsistencyScore: 0.118,  // 10%
+            totalEnergyCreditScore: 0.294  // 29.4%
+        };
+    } else if (!totalEnergyCreditScore && totalEnergyCreditScore !== 0) {
+        weights = {
+            stepsScore: 0.333,           // 33.3%
+            activeMinutesScore: 0.333,  // 33.3%
+            consistencyScore: 0.2,     // 20%
+            activityLevelConsistencyScore: 0.134,  // 13.4%
+            totalEnergyCreditScore: 0
+        };
+    }
 
     // Handle default values for missing scores
     const ss = stepsScore || 0;
@@ -42,7 +74,7 @@ export function calculateFinalActivityScore(
 
     // Calculate weighted activity score
     // Activity score = 0.25 * SS + 0.25 * AMS + 0.15 * CS + 0.1 * GCS + 0.25 * TECS
-    const finalActivityScore = 
+    const finalActivityScore =
         weights.stepsScore * ss +
         weights.activeMinutesScore * ams +
         weights.consistencyScore * cs +
@@ -55,16 +87,62 @@ export function calculateFinalActivityScore(
     return {
         value: Math.round(boundedScore * 100) / 100, // Round to 2 decimal places
         components: {
-            stepsScore: { value: ss, weight: weights.stepsScore, contribution: weights.stepsScore * ss },
-            activeMinutesScore: { value: ams, weight: weights.activeMinutesScore, contribution: weights.activeMinutesScore * ams },
-            consistencyScore: { value: cs, weight: weights.consistencyScore, contribution: weights.consistencyScore * cs },
-            activityLevelConsistencyScore: { value: gcs, weight: weights.activityLevelConsistencyScore, contribution: weights.activityLevelConsistencyScore * gcs },
-            totalEnergyCreditScore: { value: tecs, weight: weights.totalEnergyCreditScore, contribution: weights.totalEnergyCreditScore * tecs }
+            stepsScore: {value: ss, weight: weights.stepsScore, contribution: weights.stepsScore * ss},
+            activeMinutesScore: {
+                value: ams,
+                weight: weights.activeMinutesScore,
+                contribution: weights.activeMinutesScore * ams
+            },
+            consistencyScore: {
+                value: cs,
+                weight: weights.consistencyScore,
+                contribution: weights.consistencyScore * cs
+            },
+            activityLevelConsistencyScore: {
+                value: gcs,
+                weight: weights.activityLevelConsistencyScore,
+                contribution: weights.activityLevelConsistencyScore * gcs
+            },
+            totalEnergyCreditScore: {
+                value: tecs,
+                weight: weights.totalEnergyCreditScore,
+                contribution: weights.totalEnergyCreditScore * tecs
+            }
         },
         weights: weights,
         trend: null // Not calculated in this implementation
     };
 }
+
+export const mockFinalActivityScoreTest = async () => {
+    await sleep(2000);
+    /// real test
+
+    const [stepsScore,
+        activeMinutesScore,
+        consistencyScore,
+        activityLevelConsistencyScore,
+        totalEnergyCreditScore] = await Promise.all([
+        mockStepsScoreTest(),
+        mockActivityMinutesScoreTest(),
+        mockConsistencyScoreTest(),
+        mockActivityLevelConsistencyScoreTest(),
+        mockTotalEnergyCreditScoreTest()]);
+
+    const result = calculateFinalActivityScore(
+        stepsScore?.value,
+        activeMinutesScore?.value,
+        consistencyScore?.value,
+        activityLevelConsistencyScore?.value,
+        totalEnergyCreditScore?.value,
+    )
+
+    console.info('calculate Final Activity Score =', result);
+
+    return result;
+}
+mockFinalActivityScoreTest();
+
 
 /**
  * Compare calculated final activity score with API result and provide analysis
@@ -98,7 +176,7 @@ export function compareFinalActivityScores(calculatedScore, apiScore, componentS
             totalEnergyCreditScore: componentScores.totalEnergyCreditScore
         },
         weightedContributions: calculatedScore.components,
-        message: isWithinRange ? 
+        message: isWithinRange ?
             '✅ Final Activity score calculation matches API within acceptable range' :
             `⚠️ Final Activity score calculation differs significantly from API (diff: ${valueDiff})`
     };

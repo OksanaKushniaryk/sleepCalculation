@@ -51,7 +51,7 @@ export function calculateConsistencyScore(steps7dArray, steps7dMean, steps7dStdD
 }
 
 
-const mockTest = async () => {
+export const mockConsistencyScoreTest = async () => {
     await sleep(2000);
     /// real test
     const result = calculateConsistencyScore([2502, 3446, 4383, 7187, 6375, 4733, 3446], null, null);
@@ -59,8 +59,10 @@ const mockTest = async () => {
     // const result = calculateConsistencyScore([2502, 3446, 4383, 7187, 6375, 4733, 3446], 4581, 1557);
 
     console.info('calculate Consistency Score =', result);
+
+    return result;
 }
-mockTest();
+mockConsistencyScoreTest();
 
 /**
  * Compare calculated consistency score with API result and provide analysis

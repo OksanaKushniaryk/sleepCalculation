@@ -112,15 +112,17 @@ function calculateStandardDeviation(values, mean) {
 }
 
 
-const mockTest = async () => {
+export const mockActivityLevelConsistencyScoreTest = async () => {
     await sleep(2000);
     /// real test
     // const result = calculateActivityLevelConsistencyScore([500, 520, 480, 510, 530], 0.02);
     const result = calculateActivityLevelConsistencyScore([500, 520, 480, 510, 530], undefined);
 
     console.info('calculate Activity Level Consistency Score =', result);
+
+    return result;
 }
-mockTest();
+mockActivityLevelConsistencyScoreTest();
 
 /**
  * Compare calculated activity level consistency score with API result and provide analysis

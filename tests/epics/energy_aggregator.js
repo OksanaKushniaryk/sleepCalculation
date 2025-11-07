@@ -7,6 +7,8 @@ import { calculateRecoveryScore } from "./energy/recovery-score.js";
 import { calculateHRVScore } from "./energy/hrv-score.js";
 import { calculateEnergyCreditScore } from "./energy/energy-credit-score.js";
 import { calculateEnergySafeZone } from "./energy/energy-safe-zone.js";
+import {sleep} from "../utils/async-helper.js";
+import {calculateTotalEnergyCreditScore} from "./activity/total-energy-credit-score.js";
 
 function round2(n) { return Number(n.toFixed(2)); }
 
@@ -222,3 +224,36 @@ energyScore({
   historicalEnergyDeltas: [25, 45, -15, 30, 55, 10, 35]
 });
 */
+
+const mockTest = async () => {
+  await sleep(2000);
+  /// real test
+  const result = energyScore({
+    // Basic demographics
+    weight: 75, height: 175, age: 30, gender: 'male',
+
+    // Physiological scores
+    sleepScore: 85, stressScore: 45, timeOfDay: 14,
+
+    // Nutrition
+    totalCalorieIntake: 2300, proteinKcal: 690, carbKcal: 920, fatKcal: 690,
+
+    // Activity
+    metValue: 1.8, durationHours: 24, averageActivityLevel: 1.2,
+
+    // Fitness
+    fitnessScore: 78, vo2Max: 45, targetVO2Max: 48,
+    bodyFatPercentage: 15, bodyFatLowerBound: 14, bodyFatUpperBound: 17,
+
+    // Recovery
+    currentHRV: 42, baselineHRV: 45, acceptableDeviation: 20,
+
+    // Energy management
+    currentCreditScore: 700, rollingAvgCreditChanges: 5.2,
+    historicalEnergyDeltas: [25, 45, -15, 30, 55, 10, 35]
+  });
+
+  console.info('calculate Energy Score =', result);
+  return result;
+}
+mockTest();

@@ -60,14 +60,16 @@ export function calculateActiveMinutesScore(mvpaMinutesToday, mvpaRecentMean, mv
 }
 
 
-const mockTest = async () => {
+export const mockActivityMinutesScoreTest = async () => {
     await sleep(2000);
     /// real test
     const result = calculateActiveMinutesScore(2, 9, null, 'adult');
 
     console.info('calculate Active Minutes Score =', result);
+
+    return result;
 }
-mockTest();
+mockActivityMinutesScoreTest();
 
 /**
  * Compare calculated active minutes score with API result and provide analysis
