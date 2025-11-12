@@ -1,16 +1,18 @@
 /**
  * Stress Score Calculation
- * 
+ *
  * Stress score is primarily based on Resting Heart Rate (RHR) with parasympathetic scoring.
  * Lower RHR indicates more parasympathetic (less stress), higher RHR indicates more sympathetic (more stress).
- * 
+ *
  * Formula from OneVital specification:
  * RHR_Para(x) = if x >= μ_rhr: 0
  *               else: 100 * (1 - exp(- ((μ_rhr - x)^2) / (2 * σ_rhr^2)))
- * 
+ *
  * where: x = resting heart rate (bpm), μ_rhr = 100 bpm, σ_rhr = 15 bpm
  * Overall_Stress = RHR_Para (inverted - high parasympathetic = low stress)
  */
+
+import {sleep} from "../../utils/async-helper.js";
 
 /**
  * Calculate Resting Heart Rate (RHR) based on heart rate and activity data
@@ -19,10 +21,10 @@
  * @param {number} fallbackRHR - Fallback RHR if calculation not possible
  * @returns {Object} RHR calculation result
  */
-export function calculateRHR(heartRateReadings, totalStepsLast30Min, fallbackRHR = 70) {
+export function calculateRHRfor30min(heartRateReadings, totalStepsLast30Min, fallbackRHR = 70) {
     // RHR Estimation Logic from specification:
     // If user has taken fewer than 300 steps in last 30 minutes, they are considered at rest
-    if (totalStepsLast30Min >= 300) {
+    if (totalStepsLast30Min < 300) {
         return {
             value: fallbackRHR,
             calculationMethod: 'fallback_active',
@@ -31,11 +33,6 @@ export function calculateRHR(heartRateReadings, totalStepsLast30Min, fallbackRHR
                 totalStepsLast30Min,
                 fallbackRHR
             },
-            components: {
-                isAtRest: false,
-                stepsThreshold: 300,
-                averageHR: null
-            }
         };
     }
 
@@ -49,11 +46,6 @@ export function calculateRHR(heartRateReadings, totalStepsLast30Min, fallbackRHR
                 totalStepsLast30Min,
                 fallbackRHR
             },
-            components: {
-                isAtRest: true,
-                stepsThreshold: 300,
-                averageHR: null
-            }
         };
     }
 
@@ -67,18 +59,19 @@ export function calculateRHR(heartRateReadings, totalStepsLast30Min, fallbackRHR
             totalStepsLast30Min,
             fallbackRHR
         },
-        components: {
-            isAtRest: true,
-            stepsThreshold: 300,
-            averageHR: averageHR,
-            heartRateRange: {
-                min: Math.min(...heartRateReadings),
-                max: Math.max(...heartRateReadings),
-                count: heartRateReadings.length
-            }
-        }
     };
 }
+
+export const mockRHRTest = async () => {
+    await sleep(2000);
+    /// real test
+    const result = calculateRHRfor30min([120, 85, 60, 53, 14, 134, 120, 85, 60, 53, 14, 134, 120, 85, 60, 53, 14, 134, 120, 85, 60, 53, 14, 134], 1864);
+
+    console.info('calculate RHR =', result);
+
+    return result;
+}
+mockRHRTest();
 
 /**
  * Calculate parasympathetic score based on RHR
@@ -89,7 +82,7 @@ export function calculateRHR(heartRateReadings, totalStepsLast30Min, fallbackRHR
  */
 export function calculateParasympatheticScore(rhr, muRHR = 100, sigmaRHR = 15) {
     let parasympatheticScore;
-    
+
     // RHR_Para(x) = if x >= μ_rhr: 0
     //               else: 100 * (1 - exp(- ((μ_rhr - x)^2) / (2 * σ_rhr^2)))
     if (rhr >= muRHR) {
@@ -117,30 +110,17 @@ export function calculateParasympatheticScore(rhr, muRHR = 100, sigmaRHR = 15) {
     };
 }
 
-/**
- * Calculate overall stress score
- * @param {number} parasympatheticScore - Parasympathetic score (0-100)
- * @returns {Object} Overall stress score calculation result
- */
-export function calculateOverallStressScore(parasympatheticScore) {
-    // Overall_Stress = RHR_Para
-    // Note: High parasympathetic = low stress, so we might want to invert this
-    // But according to the specification, Overall_Stress = RHR_Para directly
-    const overallStress = parasympatheticScore;
+export const mockParasympatheticScoreTest = async () => {
+    await sleep(2000);
+    /// real test
+    const result = calculateParasympatheticScore(70);
 
-    return {
-        value: Math.round(overallStress * 100) / 100,
-        calculationMethod: 'direct_parasympathetic',
-        inputs: {
-            parasympatheticScore
-        },
-        components: {
-            interpretation: overallStress >= 80 ? 'low_stress' : 
-                           overallStress >= 60 ? 'moderate_stress' : 
-                           overallStress >= 40 ? 'elevated_stress' : 'high_stress'
-        }
-    };
+    console.info('calculate Parasympathetic Score =', result);
+
+    return result;
 }
+mockParasympatheticScoreTest();
+
 
 /**
  * Calculate stress score based on resting heart rate
@@ -153,36 +133,36 @@ export function calculateOverallStressScore(parasympatheticScore) {
  */
 export function calculateStressScore(heartRateData, totalStepsLast30Min = 0, muRHR = 100, sigmaRHR = 15, fallbackRHR = 70) {
     let rhrResult;
-    
+
     // Determine if we have pre-calculated RHR or need to calculate it
     if (typeof heartRateData === 'number') {
         // Pre-calculated RHR provided
         rhrResult = {
             value: heartRateData,
             calculationMethod: 'provided_rhr',
-            inputs: { providedRHR: heartRateData },
-            components: { isAtRest: null, stepsThreshold: 300, averageHR: heartRateData }
+            inputs: {providedRHR: heartRateData},
+            components: {isAtRest: null, stepsThreshold: 300, averageHR: heartRateData}
         };
     } else if (Array.isArray(heartRateData)) {
         // Calculate RHR from heart rate readings
-        rhrResult = calculateRHR(heartRateData, totalStepsLast30Min, fallbackRHR);
+        rhrResult = calculateRHRfor30min(heartRateData, totalStepsLast30Min, fallbackRHR);
     } else {
         // No data provided, use fallback
-        rhrResult = calculateRHR([], totalStepsLast30Min, fallbackRHR);
+        rhrResult = calculateRHRfor30min([], totalStepsLast30Min, fallbackRHR);
     }
 
     // Calculate parasympathetic score based on RHR
     const parasympatheticResult = calculateParasympatheticScore(rhrResult.value, muRHR, sigmaRHR);
-    
+
     // Calculate overall stress score
-    const overallStressResult = calculateOverallStressScore(parasympatheticResult.value);
+    const overallStressResult = parasympatheticResult;
 
     return {
         value: overallStressResult.value,
         calculationMethod: 'rhr_based_stress',
         inputs: {
-            heartRateData: typeof heartRateData === 'number' ? heartRateData : 
-                          Array.isArray(heartRateData) ? `${heartRateData.length} readings` : 'no_data',
+            heartRateData: typeof heartRateData === 'number' ? heartRateData :
+                Array.isArray(heartRateData) ? `${heartRateData.length} readings` : 'no_data',
             totalStepsLast30Min,
             muRHR,
             sigmaRHR,
@@ -195,6 +175,18 @@ export function calculateStressScore(heartRateData, totalStepsLast30Min = 0, muR
         }
     };
 }
+
+export const mockStressScoreTest = async () => {
+    await sleep(2000);
+    /// real test
+    const result = calculateStressScore(70);
+    // const result = calculateStressScore([120, 85, 60, 53, 14, 134, 120, 85, 60, 53, 14, 134, 120, 85, 60, 53, 14, 134, 120, 85, 60, 53, 14, 134]);
+
+    console.info('calculate Stress Score =', result);
+
+    return result;
+}
+mockStressScoreTest();
 
 /**
  * Compare calculated stress score with API result and provide analysis
@@ -228,7 +220,7 @@ export function compareStressScores(calculatedStressScore, apiStressScore, metri
             calculationMethod: calculatedStressScore.calculationMethod,
             isAtRest: calculatedStressScore.components.rhr.components.isAtRest
         },
-        message: isWithinRange ? 
+        message: isWithinRange ?
             '✅ Stress score calculation matches API within acceptable range' :
             `⚠️ Stress score calculation differs from API (diff: ${difference.toFixed(2)} points, ${percentageDiff.toFixed(1)}%)`
     };

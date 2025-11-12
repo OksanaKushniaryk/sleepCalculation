@@ -1,13 +1,18 @@
 /**
  * Energy Capacity Calculation
- * 
+ *
  * EnergyCapacity = BMR × CapacityMultiplier
- * 
+ *
  * CapacityMultiplier = 1.5 + α × FitnessScore + β × RecoveryScore - γ × StressIndex
  * CapacityMultiplier = min(max(CapacityMultiplier, 1.0), 5.0)
- * 
+ *
  * Typical coefficient values: α = 2.0, β = 1.5, γ = 2.0
  */
+
+import {sleep} from "../../utils/async-helper.js";
+import {calculateBasalMetabolicRate} from "./basal-metabolic-rate.js";
+import {calculateHRVScore} from "./hrv-score.js";
+import {calculateRecoveryScore} from "./recovery-score.js";
 
 /**
  * Calculate VO2 max-based fitness score using Gaussian distribution
@@ -49,25 +54,27 @@ function calculateBodyFatFitnessScore(bodyFatPercentage, lowerBound, upperBound,
 }
 
 /**
- * Get target VO2 max based on age and gender
+ * Get target VO2 max based on age and gender using "Good" values from charts
  * @param {number} age - Age in years
  * @param {string} gender - 'male' or 'female'
  * @returns {number} Target VO2 max value
  */
 function getTargetVO2Max(age, gender) {
-    // Simplified lookup based on age ranges from the chart
+    // Using "Good" values from VO2 max charts
     if (gender.toLowerCase() === 'male') {
-        if (age < 30) return 50;
-        if (age < 40) return 48;
-        if (age < 50) return 45;
-        if (age < 60) return 42;
-        return 38;
-    } else {
-        if (age < 30) return 45;
-        if (age < 40) return 42;
-        if (age < 50) return 39;
-        if (age < 60) return 36;
-        return 32;
+        if (age <= 29) return 44; // Good range: 44-52.9
+        if (age <= 39) return 42; // Good range: 42-49.9
+        if (age <= 49) return 39; // Good range: 39-44.9
+        if (age <= 59) return 36; // Good range: 36-42.9
+        if (age <= 69) return 36; // Good range: 36-40.9
+        return 36;
+    } else { // female
+        if (age <= 29) return 39; // Good range: 39-48.9
+        if (age <= 39) return 37; // Good range: 37-44.9
+        if (age <= 49) return 35; // Good range: 35-41.9
+        if (age <= 59) return 34; // Good range: 34-39.9
+        if (age <= 69) return 33; // Good range: 33-36.9
+        return 33;
     }
 }
 
@@ -81,19 +88,29 @@ function getTargetVO2Max(age, gender) {
 function getOptimalBodyFatRange(age, gender, fitnessLevel = 'fitness') {
     if (gender.toLowerCase() === 'male') {
         switch (fitnessLevel) {
-            case 'essential': return { lower: 2, upper: 5 };
-            case 'athletes': return { lower: 6, upper: 13 };
-            case 'fitness': return { lower: 14, upper: 17 };
-            case 'average': return { lower: 18, upper: 24 };
-            default: return { lower: 14, upper: 17 };
+            case 'essential':
+                return {lower: 2, upper: 5};
+            case 'athletes':
+                return {lower: 6, upper: 13};
+            case 'fitness':
+                return {lower: 14, upper: 17};
+            case 'average':
+                return {lower: 18, upper: 24};
+            default:
+                return {lower: 14, upper: 17};
         }
     } else {
         switch (fitnessLevel) {
-            case 'essential': return { lower: 10, upper: 13 };
-            case 'athletes': return { lower: 14, upper: 20 };
-            case 'fitness': return { lower: 21, upper: 24 };
-            case 'average': return { lower: 25, upper: 31 };
-            default: return { lower: 21, upper: 24 };
+            case 'essential':
+                return {lower: 10, upper: 13};
+            case 'athletes':
+                return {lower: 14, upper: 20};
+            case 'fitness':
+                return {lower: 21, upper: 24};
+            case 'average':
+                return {lower: 25, upper: 31};
+            default:
+                return {lower: 21, upper: 24};
         }
     }
 }
@@ -111,11 +128,11 @@ function getOptimalBodyFatRange(age, gender, fitnessLevel = 'fitness') {
  * @param {Object} bodyFatData - Optional body fat data for fitness calculation
  * @returns {Object} Energy Capacity with value, components, and calculation details
  */
-export function calculateEnergyCapacity(bmr, fitnessScore = null, recoveryScore = 90, stressIndex = 30, alpha = 2.0, beta = 1.5, gamma = 2.0, vo2Data = null, bodyFatData = null) {
+export function calculateEnergyCapacity(bmr, fitnessScore = null, recoveryScore = 90, stressIndex = 30, vo2Data = null, bodyFatData = null, alpha = 2.0, beta = 1.5, gamma = 2.0) {
     let calculatedFitnessScore = fitnessScore;
     let fitnessCalculationMethod = 'provided';
     let fitnessBreakdown = null;
-    
+
     // Calculate fitness score if not provided
     if (calculatedFitnessScore === null) {
         if (vo2Data && vo2Data.current && vo2Data.target) {
@@ -132,9 +149,9 @@ export function calculateEnergyCapacity(bmr, fitnessScore = null, recoveryScore 
         } else if (bodyFatData && bodyFatData.percentage && bodyFatData.lowerBound && bodyFatData.upperBound) {
             // Use body fat percentage-based calculation (fallback)
             calculatedFitnessScore = calculateBodyFatFitnessScore(
-                bodyFatData.percentage, 
-                bodyFatData.lowerBound, 
-                bodyFatData.upperBound, 
+                bodyFatData.percentage,
+                bodyFatData.lowerBound,
+                bodyFatData.upperBound,
                 bodyFatData.sigma
             );
             fitnessCalculationMethod = 'body_fat_based';
@@ -152,22 +169,22 @@ export function calculateEnergyCapacity(bmr, fitnessScore = null, recoveryScore 
             fitnessCalculationMethod = 'default';
         }
     }
-    
+
     // Normalize scores to 0-1 range for calculation
     const fitnessNormalized = calculatedFitnessScore / 100;
     const recoveryNormalized = recoveryScore / 100;
     const stressNormalized = stressIndex / 100;
-    
+
     // Calculate capacity multiplier
     // CapacityMultiplier = 1.5 + α × FitnessScore + β × RecoveryScore - γ × StressIndex
     let capacityMultiplier = 1.5 + (alpha * fitnessNormalized) + (beta * recoveryNormalized) - (gamma * stressNormalized);
-    
+
     // Constrain multiplier between 1.0 and 5.0
     capacityMultiplier = Math.min(Math.max(capacityMultiplier, 1.0), 5.0);
-    
+
     // Calculate final energy capacity
     const energyCapacity = bmr * capacityMultiplier;
-    
+
     return {
         value: Math.round(energyCapacity * 100) / 100, // Round to 2 decimal places
         bmr,
@@ -201,6 +218,45 @@ export function calculateEnergyCapacity(bmr, fitnessScore = null, recoveryScore 
     };
 }
 
+
+export const mockEnergyCapacityTest = async () => {
+    await sleep(2000);
+    
+    // Basic test case: healthy male
+    const basalMetabolicRate = calculateBasalMetabolicRate(90, 185, 30, 'male', 75, 50, 12);
+    const result1 = calculateEnergyCapacity(basalMetabolicRate.value, 80, 85, 25);
+    console.info('Energy Capacity Test 1 (Healthy Male) =', result1);
+    
+    // Test case 2: Female with VO2 data
+    const bmr2 = calculateBasalMetabolicRate(65, 165, 25, 'female', 80, 40, 14);
+    const vo2Data = { current: 40, target: getTargetVO2Max(25, 'female'), sigma: 3.0 };
+    const result2 = calculateEnergyCapacity(bmr2.value, null, 75, 35, vo2Data);
+    console.info('Energy Capacity Test 2 (Female with VO2) =', result2);
+    
+    // Test case 3: Male with body fat data
+    const bmr3 = calculateBasalMetabolicRate(80, 175, 35, 'male', 70, 60, 16);
+    const bodyFatData = { percentage: 15, ...getOptimalBodyFatRange(35, 'male', 'fitness') };
+    const result3 = calculateEnergyCapacity(bmr3.value, null, 80, 20, null, bodyFatData);
+    console.info('Energy Capacity Test 3 (Male with Body Fat) =', result3);
+    
+    // Test case 4: Edge case - minimum multiplier
+    const result4 = calculateEnergyCapacity(1800, 0, 0, 100);
+    console.info('Energy Capacity Test 4 (Minimum Multiplier) =', result4);
+    
+    // Test case 5: Edge case - maximum multiplier
+    const result5 = calculateEnergyCapacity(1800, 100, 100, 0);
+    console.info('Energy Capacity Test 5 (Maximum Multiplier) =', result5);
+    
+    // Test case 6: Senior athlete
+    const bmr6 = calculateBasalMetabolicRate(70, 170, 60, 'male', 85, 30, 8);
+    const vo2Data6 = { current: 38, target: getTargetVO2Max(60, 'male'), sigma: 3.0 };
+    const result6 = calculateEnergyCapacity(bmr6.value, null, 90, 15, vo2Data6);
+    console.info('Energy Capacity Test 6 (Senior Athlete) =', result6);
+    
+    return { result1, result2, result3, result4, result5, result6 };
+}
+mockEnergyCapacityTest();
+
 /**
  * Compare calculated Energy Capacity with API result and provide analysis
  * @param {Object} calculatedEnergyCapacity - Our calculated Energy Capacity
@@ -233,7 +289,7 @@ export function compareEnergyCapacity(calculatedEnergyCapacity, apiEnergyCapacit
             capacityMultiplier: calculatedEnergyCapacity.capacityMultiplier,
             fitnessMethod: calculatedEnergyCapacity.fitnessCalculation.method
         },
-        message: isWithinRange ? 
+        message: isWithinRange ?
             '✅ Energy Capacity calculation matches API within acceptable range' :
             `⚠️ Energy Capacity calculation differs significantly from API (diff: ${valueDiff.toFixed(1)} kcal/day)`
     };

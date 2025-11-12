@@ -5,6 +5,8 @@
  * with dynamic adjustments based on physiological data (sleep, stress, time of day).
  */
 
+import {sleep} from "../../utils/async-helper.js";
+
 /**
  * Calculate Basal Metabolic Rate using Mifflin-St Jeor equation with adjustments
  * @param {number} weight - Weight in kg
@@ -62,6 +64,17 @@ export function calculateBasalMetabolicRate(weight, height, age, gender, sleepSc
         trend: null // Not calculated in this implementation
     };
 }
+
+export const mockBasalMetabolicRateTest = async () => {
+    await sleep(2000);
+    /// real test
+    const result = calculateBasalMetabolicRate(90, 185, 30, 'male', 75, 50, 12);
+
+    console.info('calculate Basal Metabolic Rate =', result);
+
+    return result;
+}
+mockBasalMetabolicRateTest();
 
 /**
  * Compare calculated BMR with API result and provide analysis

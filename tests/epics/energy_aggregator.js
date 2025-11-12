@@ -1,24 +1,23 @@
 // energy_aggregator.js
-import { calculateBasalMetabolicRate } from "./energy/basal-metabolic-rate.js";
-import { calculateThermicEffectFood } from "./energy/thermic-effect-food.js";
-import { calculatePhysicalActivityEnergyExpenditure } from "./energy/physical-activity-energy-expenditure.js";
-import { calculateEnergyCapacity } from "./energy/energy-capacity.js";
-import { calculateRecoveryScore } from "./energy/recovery-score.js";
-import { calculateHRVScore } from "./energy/hrv-score.js";
-import { calculateEnergyCreditScore } from "./energy/energy-credit-score.js";
-import { calculateEnergySafeZone } from "./energy/energy-safe-zone.js";
+import {calculateBasalMetabolicRate} from "./energy/basal-metabolic-rate.js";
+import {calculateThermicEffectFood} from "./energy/thermic-effect-food.js";
+import {calculatePhysicalActivityEnergyExpenditure} from "./energy/physical-activity-energy-expenditure.js";
+import {calculateEnergyCapacity} from "./energy/energy-capacity.js";
+import {calculateRecoveryScore} from "./energy/recovery-score.js";
+import {calculateHRVScore} from "./energy/hrv-score.js";
+import {calculateEnergyCreditScore} from "./energy/energy-credit-score.js";
+import {calculateEnergySafeZone} from "./energy/energy-safe-zone.js";
 import {sleep} from "../utils/async-helper.js";
-import {calculateTotalEnergyCreditScore} from "./activity/total-energy-credit-score.js";
 
 function round2(n) { return Number(n.toFixed(2)); }
 
 /**
  * Calculate comprehensive energy metrics based on multiple physiological and activity measurements
- * 
+ *
  * This function analyzes various aspects of energy metabolism including basal metabolic rate,
  * thermic effect of food, physical activity expenditure, energy capacity, recovery metrics,
  * HRV analysis, energy credit scoring, and safe zone recommendations.
- * 
+ *
  * @param {Object} values - Energy data and biometric measurements
  * @param {number} values.weight - Weight in kg
  * @param {number} values.height - Height in cm
@@ -57,83 +56,83 @@ function energyScore(values) {
   const {
     // BMR calculation inputs
     weight, height, age, gender, sleepScore, stressScore, timeOfDay,
-    
+
     // TEF calculation inputs
     totalCalorieIntake, proteinKcal, carbKcal, fatKcal,
-    
+
     // PAEE calculation inputs
     metValue, durationHours, averageActivityLevel,
-    
+
     // Energy Capacity calculation inputs
     fitnessScore, recoveryScore, stressIndex,
     vo2Max, targetVO2Max, bodyFatPercentage, bodyFatLowerBound, bodyFatUpperBound,
-    
+
     // HRV Score calculation inputs
     currentHRV, baselineHRV, acceptableDeviation, populationType,
-    
+
     // Energy Credit Score calculation inputs
     currentCreditScore, rollingAvgCreditChanges,
-    
+
     // Energy Safe Zone calculation inputs
     historicalEnergyDeltas, bufferZone
   } = values;
 
   // === CALCULATE INDIVIDUAL ENERGY METRICS ===
-  
+
   // Basal Metabolic Rate - Foundation of energy expenditure
   const bmr = calculateBasalMetabolicRate(
     weight, height, age, gender,
     sleepScore || 90, stressScore || 50, timeOfDay || 12
   );
-  
+
   // Thermic Effect of Food - Energy cost of digestion
   const tef = calculateThermicEffectFood(
     totalCalorieIntake, proteinKcal, carbKcal, fatKcal
   );
-  
+
   // Physical Activity Energy Expenditure - Activity-related energy cost
   const paee = calculatePhysicalActivityEnergyExpenditure(
     metValue, bmr.value, durationHours, averageActivityLevel
   );
-  
+
   // HRV Score - Heart rate variability analysis
   const hrv = calculateHRVScore(
     currentHRV, baselineHRV, acceptableDeviation, populationType || 'general'
   );
-  
+
   // Recovery Score - Combination of HRV and sleep
   const recovery = calculateRecoveryScore(
     hrv.value, sleepScore || 85, 0.6, 0.4
   );
-  
+
   // Prepare VO2 and body fat data for Energy Capacity
   const vo2Data = vo2Max ? {
     current: vo2Max,
     target: targetVO2Max,
     sigma: 3.0
   } : null;
-  
+
   const bodyFatData = bodyFatPercentage ? {
     percentage: bodyFatPercentage,
     lowerBound: bodyFatLowerBound,
     upperBound: bodyFatUpperBound,
     sigma: 2.5
   } : null;
-  
+
   // Energy Capacity - Maximum sustainable energy output
   const energyCapacity = calculateEnergyCapacity(
     bmr.value,
     fitnessScore,
     recoveryScore || recovery.value,
     stressIndex || stressScore || 50,
+      vo2Data,
+      bodyFatData,
     2.0, 1.5, 2.0, // alpha, beta, gamma coefficients
-    vo2Data,
-    bodyFatData
   );
-  
+
   // Calculate Total Energy Expenditure (TEE)
   const totalEnergyExpenditure = bmr.value + paee.value + tef.value;
-  
+
   // Energy Credit Score - Sustainable energy management scoring
   const energyCredit = calculateEnergyCreditScore(
     energyCapacity.value,
@@ -142,7 +141,7 @@ function energyScore(values) {
     rollingAvgCreditChanges || 0,
     250, 8, 10, 1000 // maxScalingDelta, surplusGain, deficitPenalty, maxScore
   );
-  
+
   // Energy Safe Zone - Personalized energy balance recommendations
   const safeZone = calculateEnergySafeZone(
     historicalEnergyDeltas || [],
@@ -151,7 +150,7 @@ function energyScore(values) {
   );
 
   // === COMPILE COMPREHENSIVE RESULTS ===
-  
+
   const results = {
     // Individual component scores
     bmr: round2(bmr.value),
@@ -161,15 +160,15 @@ function energyScore(values) {
     recovery: round2(recovery.value),
     hrv: round2(hrv.value),
     energyCredit: round2(energyCredit.value),
-    
+
     // Calculated metrics
     totalEnergyExpenditure: round2(totalEnergyExpenditure),
     energyDelta: round2(energyCapacity.value - totalEnergyExpenditure),
-    
+
     // Safe zone bounds (if available)
     safeZoneUpperBound: safeZone.available ? round2(safeZone.upperBound) : null,
     safeZoneLowerBound: safeZone.available ? round2(safeZone.lowerBound) : null,
-    
+
     // Detailed component objects for advanced analysis
     components: {
       bmrDetailed: bmr,
@@ -181,13 +180,13 @@ function energyScore(values) {
       energyCreditDetailed: energyCredit,
       safeZoneDetailed: safeZone
     },
-    
+
     // Energy balance analysis
     analysis: {
       energyBalance: energyCapacity.value - totalEnergyExpenditure > 0 ? 'surplus' : 'deficit',
       sustainabilityScore: round2(energyCredit.value / 10), // 0-100 scale
-      recoveryReadiness: recovery.value >= 80 ? 'excellent' : 
-                        recovery.value >= 60 ? 'good' : 
+      recoveryReadiness: recovery.value >= 80 ? 'excellent' :
+                        recovery.value >= 60 ? 'good' :
                         recovery.value >= 40 ? 'fair' : 'needs attention'
     }
   };

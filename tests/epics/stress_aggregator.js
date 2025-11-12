@@ -48,27 +48,35 @@ function stressScore(values) {
   let stressEnergyConversion = null;
   
   if (energyCapacity && paee !== undefined && tef !== undefined) {
-    // Energy_Surplus = |Energy Capacity - PAEE - TEF|
+    // Energy_Surplus = |Energy Capacity - PAEE (movement/activity energy cost) - TEF (digestive energy cost)|
     const energySurplus = Math.abs(energyCapacity - paee - tef);
     
+    // Overall_Stress is AVG stress for the whole day (use monthly average if provided, otherwise current)
+    const overallStress = averageMonthlyStress !== undefined ? averageMonthlyStress : mainStressScore.value;
+    
     // Stress_Energy_Rate = Average(Energy_Surplus/(100 - Overall_Stress))
-    // Note: Using current stress instead of monthly average if not provided
-    const overallStress = averageMonthlyStress || mainStressScore.value;
+    // Note: This should be averaged over the last month, but using single calculation here
     const stressEnergyRate = overallStress >= 100 ? 0 : energySurplus / (100 - overallStress);
     
     // Stress_Energy = (100 - Overall_Stress) x Stress_Energy_Rate
-    const stressEnergy = (100 - mainStressScore.value) * stressEnergyRate;
+    const stressEnergy = (100 - overallStress) * stressEnergyRate;
     
     stressEnergyConversion = {
       energySurplus: round2(energySurplus),
       stressEnergyRate: round2(stressEnergyRate),
       stressEnergy: round2(stressEnergy),
+      overallStress: round2(overallStress),
       inputs: {
         energyCapacity,
         paee,
         tef,
-        overallStress,
+        averageMonthlyStress,
         currentStress: mainStressScore.value
+      },
+      formula: {
+        energySurplus: `|${energyCapacity} - ${paee} - ${tef}| = ${round2(energySurplus)}`,
+        stressEnergyRate: `${round2(energySurplus)} / (100 - ${round2(overallStress)}) = ${round2(stressEnergyRate)}`,
+        stressEnergy: `(100 - ${round2(overallStress)}) × ${round2(stressEnergyRate)} = ${round2(stressEnergy)}`
       }
     };
   }
