@@ -5,8 +5,6 @@
  * the user is to their daily step goal or baseline.
  */
 
-import {sleep} from "../../utils/async-helper.js";
-
 /**
  * Calculate Steps Score based on OneVital formula
  * @param {number} stepsTodayX - Steps taken today
@@ -60,20 +58,6 @@ export function calculateStepsScore(stepsTodayX, baselineStepsMu, sigmaInput, st
         trend: null // Not calculated in this implementation
     };
 }
-
-export const mockStepsScoreTest = async () => {
-    await sleep(2000);
-    /// real test
-    const result = calculateStepsScore(3446, 8000, 2000, [2502, 3446, 4383, 7187, 6375, 4733, 3446]);
-
-    /// more than baseline (to check formula)
-    // const result = calculateStepsScore(3446, 8000, 2000, [7502, 6446, 4383, 7187, 6375, 4733, 3446]);
-
-    console.info('calculate Steps Score =', result);
-
-    return result;
-}
-mockStepsScoreTest();
 
 /**
  * Compare calculated steps score with API result and provide analysis

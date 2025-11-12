@@ -6,13 +6,6 @@
  * Gini Coefficient, and Total Energy Credit scores.
  */
 
-import {sleep} from "../../utils/async-helper.js";
-import {mockStepsScoreTest} from "./steps-score.js";
-import {mockActivityMinutesScoreTest} from "./active-minutes-score.js";
-import {mockConsistencyScoreTest} from "./consistency-score.js";
-import {mockActivityLevelConsistencyScoreTest} from "./activity-level-consistency.js";
-import {mockTotalEnergyCreditScoreTest} from "./total-energy-credit-score.js";
-
 /**
  * Calculate Final Activity Score based on OneVital weighted formula
  * @param {number} stepsScore - Steps Score (0-100)
@@ -113,36 +106,6 @@ export function calculateFinalActivityScore(
         trend: null // Not calculated in this implementation
     };
 }
-
-export const mockFinalActivityScoreTest = async () => {
-    await sleep(2000);
-    /// real test
-
-    const [stepsScore,
-        activeMinutesScore,
-        consistencyScore,
-        activityLevelConsistencyScore,
-        totalEnergyCreditScore] = await Promise.all([
-        mockStepsScoreTest(),
-        mockActivityMinutesScoreTest(),
-        mockConsistencyScoreTest(),
-        mockActivityLevelConsistencyScoreTest(),
-        mockTotalEnergyCreditScoreTest()]);
-
-    const result = calculateFinalActivityScore(
-        stepsScore?.value,
-        activeMinutesScore?.value,
-        consistencyScore?.value,
-        activityLevelConsistencyScore?.value,
-        totalEnergyCreditScore?.value,
-    )
-
-    console.info('calculate Final Activity Score =', result);
-
-    return result;
-}
-mockFinalActivityScoreTest();
-
 
 /**
  * Compare calculated final activity score with API result and provide analysis

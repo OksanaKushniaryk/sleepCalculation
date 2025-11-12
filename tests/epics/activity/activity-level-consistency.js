@@ -1,12 +1,10 @@
 /**
  * Activity Level Consistency Calculation
- * 
+ *
  * Measures how steps are distributed throughout the day using Gini coefficient.
  * Low Gini = evenly spread steps = good
  * High Gini = clumped activity = not good
  */
-
-import {sleep} from "../../utils/async-helper.js";
 
 /**
  * Calculate Activity Level Consistency Score based on OneVital formula
@@ -21,15 +19,15 @@ export function calculateActivityLevelConsistencyScore(stepsBins, giniMeanStepsP
     if (!stepsBins || !Array.isArray(stepsBins) || stepsBins.length === 0) {
         throw new Error('Required stepsBins array to calculate ActivityLevelConsistencyScore');
     }
-    
+
     giniCoefficient = calculateGiniCoefficient(stepsBins);
-    
+
     // Handle edge cases
     const mean = giniMeanStepsPerBin || stepsBins ? stepsBins.reduce((sum, steps) => sum + steps, 0) / stepsBins.length : 0;
     const stdDev = stepsBins ? calculateStandardDeviation(stepsBins, mean) : 0;
-    
+
     let consistencyScore;
-    
+
     // Edge case 1: All zeros → should return 0
     if (mean < 1e-8) {
         consistencyScore = 0;
@@ -42,13 +40,13 @@ export function calculateActivityLevelConsistencyScore(stepsBins, giniMeanStepsP
     else {
         consistencyScore = 100 * (1 - giniCoefficient);
     }
-    
+
     // Ensure score is within bounds
     consistencyScore = Math.max(0, Math.min(100, consistencyScore));
-    
+
     // Calculate normalization deviation (Gini coefficient itself)
     const normDeviation = giniCoefficient;
-    
+
     return {
         value: Math.round(consistencyScore),
         normDeviation: Math.round(normDeviation * 1000) / 1000, // Round to 3 decimal places
@@ -65,12 +63,12 @@ function calculateGiniCoefficient(stepsBins) {
     if (!stepsBins || stepsBins.length === 0) {
         return 0;
     }
-    
+
     const N = stepsBins.length;
-    
+
     // Step 1: Sort the array
     const x_sorted = [...stepsBins].sort((a, b) => a - b);
-    
+
     // Step 2: Calculate cumulative sum
     const cumx = [];
     let sum = 0;
@@ -78,18 +76,18 @@ function calculateGiniCoefficient(stepsBins) {
         sum += x_sorted[i];
         cumx.push(sum);
     }
-    
+
     // Step 3: Calculate Gini coefficient
     // G = (N + 1 - 2 * Σ(cumx) / Σ(x)) / N
     const totalSum = cumx[cumx.length - 1]; // Last element is the total sum
     const sumOfCumx = cumx.reduce((acc, val) => acc + val, 0);
-    
+
     if (totalSum === 0) {
         return 0; // All zeros case
     }
-    
+
     const G = (N + 1 - 2 * sumOfCumx / totalSum) / N;
-    
+
     return Math.max(0, Math.min(1, G)); // Ensure G is between 0 and 1
 }
 
@@ -103,26 +101,13 @@ function calculateStandardDeviation(values, mean) {
     if (!values || values.length === 0) {
         return 0;
     }
-    
+
     const avg = mean !== undefined ? mean : values.reduce((sum, val) => sum + val, 0) / values.length;
     const squaredDifferences = values.map(val => Math.pow(val - avg, 2));
     const variance = squaredDifferences.reduce((sum, val) => sum + val, 0) / values.length;
-    
+
     return Math.sqrt(variance);
 }
-
-
-export const mockActivityLevelConsistencyScoreTest = async () => {
-    await sleep(2000);
-    /// real test
-    // const result = calculateActivityLevelConsistencyScore([500, 520, 480, 510, 530], 0.02);
-    const result = calculateActivityLevelConsistencyScore([500, 520, 480, 510, 530], undefined);
-
-    console.info('calculate Activity Level Consistency Score =', result);
-
-    return result;
-}
-mockActivityLevelConsistencyScoreTest();
 
 /**
  * Compare calculated activity level consistency score with API result and provide analysis
@@ -140,7 +125,7 @@ export function compareActivityLevelConsistencyScores(calculatedScore, apiScore,
     }
 
     const valueDiff = Math.abs(calculatedScore.value - apiScore.value);
-    const normDevDiff = apiScore.normDeviation !== undefined ? 
+    const normDevDiff = apiScore.normDeviation !== undefined ?
         Math.abs(calculatedScore.normDeviation - apiScore.normDeviation) : null;
 
     const isWithinRange = valueDiff <= 5; // Allow 5 point difference
@@ -157,7 +142,7 @@ export function compareActivityLevelConsistencyScores(calculatedScore, apiScore,
             stepsBins: metrics.stepsBins ? `${metrics.stepsBins.length} bins` : 'N/A',
             calculationMethod: metrics.giniMeanStepsPerBin !== undefined ? 'from_gini_metric' : 'from_bins_array'
         },
-        message: isWithinRange ? 
+        message: isWithinRange ?
             '✅ Activity Level Consistency score calculation matches API within acceptable range' :
             `⚠️ Activity Level Consistency score calculation differs significantly from API (diff: ${valueDiff})`
     };
