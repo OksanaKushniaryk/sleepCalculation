@@ -22,6 +22,7 @@
     "test:verbose": "node --experimental-vm-modules node_modules/.bin/jest --verbose",
     "test:debug": "node --inspect-brk --experimental-vm-modules node_modules/.bin/jest --runInBand",
     "test:api:debug": "node --inspect-brk --experimental-vm-modules node_modules/.bin/jest tests/api --runInBand",
+    "test:api:sleep:debug": "node --inspect-brk --experimental-vm-modules node_modules/.bin/jest tests/api/sleep.test.js",
     "lint": "echo 'Linting not configured yet'",
     "lint:fix": "echo 'Linting not configured yet'",
     "dev": "node sleep_aggregator.js",

@@ -73,21 +73,35 @@ describe('OneVital API Sleep Endpoints', () => {
 
             // Test metrics object structure
             expect(firstDay.metrics).toBeDefined();
+            
+            // === Required metrics for sleepScore function calculation ===
+            
+            // Sleep stage durations (for TSD, SE, DSS, RSS calculations)
             expect(firstDay.metrics.totalSleepTimeHours).toBeDefined();
             expect(firstDay.metrics.timeInBedHours).toBeDefined();
-            expect(firstDay.metrics.deepSleepPercent).toBeDefined();
-            expect(firstDay.metrics.remSleepPercent).toBeDefined();
             expect(firstDay.metrics.deepSleepHours).toBeDefined();
             expect(firstDay.metrics.remSleepHours).toBeDefined();
             expect(firstDay.metrics.lightSleepHours).toBeDefined();
             expect(firstDay.metrics.wakeAfterSleepOnsetHours).toBeDefined();
+            
+            // Sleep stage percentages (for validation)
+            expect(firstDay.metrics.deepSleepPercent).toBeDefined();
+            expect(firstDay.metrics.remSleepPercent).toBeDefined();
+            
+            // Sleep onset and wake metrics (for SOL, WASO calculations)
             expect(firstDay.metrics.sleepOnsetLatencyMinutes).toBeDefined();
             expect(firstDay.metrics.wasoMinutes).toBeDefined();
-            expect(firstDay.metrics.heartRateDipPercent).toBeDefined();
-            expect(firstDay.metrics.sleepCyclesCount).toBeDefined();
+            
+            // Heart rate metrics (for HRD calculation)
             expect(firstDay.metrics.avgSleepHeartRateBpm).toBeDefined();
             expect(firstDay.metrics.avgRestingHeartRateBpm).toBeDefined();
+            expect(firstDay.metrics.heartRateDipPercent).toBeDefined();
+            
+            // Sleep architecture and timing (for NSC, CAS calculations)
+            expect(firstDay.metrics.sleepCyclesCount).toBeDefined();
             expect(firstDay.metrics.circadianMidpointHours).toBeDefined();
+            
+            // Sleep consistency (for SCS calculation)
             expect(firstDay.metrics.averageDayToDayVariationHours).toBeDefined();
 
             // Test all score components structure
@@ -207,51 +221,101 @@ async function validateSleepScoreFunction(firstDay) {
     // Convert API metrics to sleepScore function parameters
     const metrics = firstDay.metrics;
 
-    // Calculate sleep stage hours from API data
-    const totalSleepHours = metrics.totalSleepTimeHours;
-    const deepSleepHours = metrics.deepSleepHours;
-    const remSleepHours = metrics.remSleepHours;
-    const lightSleepHours = metrics.lightSleepHours;
-    const wakeHours = metrics.wakeAfterSleepOnsetHours;
-
-    // Convert hours to hours and minutes for sleepScore function
-    const deepH = Math.floor(deepSleepHours);
-    const deepM = Math.round((deepSleepHours - deepH) * 60);
-    const coreH = Math.floor(lightSleepHours);
-    const coreM = Math.round((lightSleepHours - coreH) * 60);
-    const remH = Math.floor(remSleepHours);
-    const remM = Math.round((remSleepHours - remH) * 60);
-    const awakeH = Math.floor(wakeHours);
-    const awakeM = Math.round((wakeHours - awakeH) * 60);
-
-    // Calculate total sleep time string
-    const totalH = Math.floor(totalSleepHours);
-    const totalM = Math.round((totalSleepHours - totalH) * 60);
-    const tst = `${totalH}:${totalM.toString().padStart(2, '0')}`;
-
-    // Calculate fell asleep time from circadian midpoint
-    // Assuming 8 hours of sleep, fell asleep would be midpoint - 4 hours
-    const midpointHours = metrics.circadianMidpointHours;
-    const fellAsleepDecimal = (midpointHours - 4 + 24) % 24;
-    const fellAsleepH = Math.floor(fellAsleepDecimal);
-    const fellAsleepM = Math.round((fellAsleepDecimal - fellAsleepH) * 60);
-    const fellAsleep = `${fellAsleepH.toString().padStart(2, '0')}:${fellAsleepM.toString().padStart(2, '0')}`;
-
     console.info('🔍 TESTING SLEEPSCORE FUNCTION WITH API DATA 🔍');
     console.info('='.repeat(50));
+    console.info('Raw API metrics received:', metrics);
+
+    // === USE PRECISE MINUTES FROM BACKEND (PREFERRED METHOD) ===
+    let deepH, deepM, coreH, coreM, remH, remM, awakeH, awakeM;
+    
+    if (metrics.deepSleepMinutes !== undefined && metrics.remSleepMinutes !== undefined && 
+        metrics.lightSleepMinutes !== undefined && metrics.wakeAfterSleepOnsetMinutes !== undefined) {
+        // Use precise minutes from backend
+        deepH = Math.floor(metrics.deepSleepHours || 0);
+        deepM = metrics.deepSleepMinutes;
+        coreH = Math.floor(metrics.lightSleepHours || 0);
+        coreM = metrics.lightSleepMinutes;
+        remH = Math.floor(metrics.remSleepHours || 0);
+        remM = metrics.remSleepMinutes;
+        awakeH = Math.floor(metrics.wakeAfterSleepOnsetHours || 0);
+        awakeM = metrics.wakeAfterSleepOnsetMinutes;
+        
+        console.info('✅ Using precise minutes from backend');
+    } else {
+        // Fallback: Calculate from decimal hours (less precise)
+        const deepSleepHours = metrics.deepSleepHours || 0;
+        const remSleepHours = metrics.remSleepHours || 0;
+        const lightSleepHours = metrics.lightSleepHours || 0;
+        const wakeHours = metrics.wakeAfterSleepOnsetHours || 0;
+
+        deepH = Math.floor(deepSleepHours);
+        deepM = Math.round((deepSleepHours - deepH) * 60);
+        coreH = Math.floor(lightSleepHours);
+        coreM = Math.round((lightSleepHours - coreH) * 60);
+        remH = Math.floor(remSleepHours);
+        remM = Math.round((remSleepHours - remH) * 60);
+        awakeH = Math.floor(wakeHours);
+        awakeM = Math.round((wakeHours - awakeH) * 60);
+        
+        console.warn('⚠️  Fallback: Calculating minutes from decimal hours (less precise)');
+    }
+
+    // === CALCULATE SLEEP TIMING FROM BACKEND DATA ===
+    let fellAsleep, tst;
+    
+    if (metrics.bedtimeHours !== undefined && metrics.wakeTimeHours !== undefined) {
+        // Use precise bedtime from backend
+        const bedtimeH = Math.floor(metrics.bedtimeHours);
+        const bedtimeM = Math.round((metrics.bedtimeHours - bedtimeH) * 60);
+        fellAsleep = `${bedtimeH.toString().padStart(2, '0')}:${bedtimeM.toString().padStart(2, '0')}`;
+        
+        // Calculate total sleep time from actual sleep durations (more accurate)
+        const totalSleepHours = (deepH + coreH + remH) + (deepM + coreM + remM) / 60;
+        const totalH = Math.floor(totalSleepHours);
+        const totalM = Math.round((totalSleepHours - totalH) * 60);
+        tst = `${totalH}:${totalM.toString().padStart(2, '0')}`;
+        
+        console.info('✅ Using precise bedtime from backend');
+    } else {
+        // Fallback: Calculate from circadian midpoint (less accurate)
+        const totalSleepHours = metrics.totalSleepTimeHours || 8;
+        const midpointHours = metrics.circadianMidpointHours || 4;
+        
+        const fellAsleepDecimal = (midpointHours - (totalSleepHours / 2) + 24) % 24;
+        const fellAsleepH = Math.floor(fellAsleepDecimal);
+        const fellAsleepM = Math.round((fellAsleepDecimal - fellAsleepH) * 60);
+        fellAsleep = `${fellAsleepH.toString().padStart(2, '0')}:${fellAsleepM.toString().padStart(2, '0')}`;
+        
+        const totalH = Math.floor(totalSleepHours);
+        const totalM = Math.round((totalSleepHours - totalH) * 60);
+        tst = `${totalH}:${totalM.toString().padStart(2, '0')}`;
+        
+        console.warn('⚠️  Fallback: Calculating sleep timing from circadian midpoint (less accurate)');
+    }
+
+    // === SLEEP CONSISTENCY CALCULATION ===
+    let scsX;
+    if (metrics.bedtimeVariationHours !== undefined) {
+        scsX = metrics.bedtimeVariationHours;
+        console.info('✅ Using bedtime variation for sleep consistency');
+    } else {
+        scsX = metrics.averageDayToDayVariationHours || 0;
+        console.warn('⚠️  Fallback: Using average day-to-day variation for sleep consistency');
+    }
+
     const sleepScoreParams = {
         deepH, deepM,
         coreH, coreM,
         remH, remM,
         awakeH, awakeM,
-        restingHR: Math.round(metrics.avgRestingHeartRateBpm),
-        sleepHR: Math.round(metrics.avgSleepHeartRateBpm),
+        restingHR: Math.round(metrics.avgRestingHeartRateBpm || 70),
+        sleepHR: Math.round(metrics.avgSleepHeartRateBpm || 60),
         fellAsleep,
         tst,
-        observedCycles: metrics.sleepCyclesCount,
-        scsX: metrics.averageDayToDayVariationHours,
-        wasoMinutes: metrics.wasoMinutes,
-        sleepOnsetLatencyMinutes: metrics.sleepOnsetLatencyMinutes,
+        observedCycles: metrics.sleepCyclesCount || 5,
+        scsX,
+        wasoMinutes: metrics.wasoMinutes || 0,
+        sleepOnsetLatencyMinutes: metrics.sleepOnsetLatencyMinutes || 0,
     };
 
     console.info('SleepScore parameters:', sleepScoreParams);
