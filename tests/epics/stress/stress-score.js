@@ -12,6 +12,9 @@
  * Overall_Stress = RHR_Para (inverted - high parasympathetic = low stress)
  */
 
+import {calculateParasympatheticScore} from "./parasympatic-score.js";
+import {calculateRHRfor30min} from "./RHR-for-30-min.js";
+
 /**
  * Calculate stress score based on resting heart rate
  * @param {number|Array} heartRateData - Either a single RHR value or array of HR readings

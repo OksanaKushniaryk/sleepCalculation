@@ -12,15 +12,13 @@
  * @param {number} giniMeanStepsPerBin - Pre-calculated Gini coefficient (if available)
  * @returns {Object} Activity level consistency score with value, normDeviation, and trend
  */
-export function calculateActivityLevelConsistencyScore(stepsBins, giniMeanStepsPerBin) {
+export function calculateActivityLevelConsistencyScore(stepsBins, giniMeanStepsPerBin, steps7dStdDev) {
     // Use provided Gini coefficient or calculate from bins
     let giniCoefficient = 0;
 
-    if (!stepsBins || !Array.isArray(stepsBins) || stepsBins.length === 0) {
-        throw new Error('Required stepsBins array to calculate ActivityLevelConsistencyScore');
+    if (Array.isArray(stepsBins) && stepsBins?.length) {
+        giniCoefficient = calculateGiniCoefficient(stepsBins);
     }
-
-    giniCoefficient = calculateGiniCoefficient(stepsBins);
 
     // Handle edge cases
     const mean = giniMeanStepsPerBin || stepsBins ? stepsBins.reduce((sum, steps) => sum + steps, 0) / stepsBins.length : 0;
